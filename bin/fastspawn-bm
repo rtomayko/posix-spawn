@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+# Usage: fastspawn-bm
+require 'fastspawn'
+require 'benchmark'
+
+allocate   = 100 * (1024 ** 2)
+iterations = 1_000
+
+include Benchmark
+
+# bloat the process
+bloat = 'x' * allocate
+
+# benchmark vspawn (vfork+exec) vs. fspawn (fork+exec)
+puts "benchmarking vspawn vs. fspawn over #{iterations} runs" +
+     " at #{allocate / (1024 ** 2)}M res"
+bm 40 do |x|
+  x.report("vspawn:") do
+    iterations.times do
+      pid = FastSpawn.vspawn('true')
+      Process.wait(pid)
+    end
+  end
+  x.report("fspawn:") do
+    iterations.times do
+      pid = FastSpawn.fspawn('true')
+      Process.wait(pid)
+    end
+  end
+end

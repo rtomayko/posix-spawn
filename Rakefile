@@ -45,6 +45,11 @@ Rake::TestTask.new 'test' do |t|
 end
 task :test => :build
 
+desc "Run some benchmarks"
+task :benchmark => :build do
+  ruby "-Ilib:ext", "bin/fastspawn-bm"
+end
+
 # ==========================================================
 # Packaging
 # ==========================================================
