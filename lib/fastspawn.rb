@@ -15,6 +15,16 @@ module FastSpawn
     raise NotImplemented
   end
 
+  # Spawn a child process using posix_spawn.
+  #
+  # argv - Array of command line arguments passed to exec.
+  #
+  # Returns the pid of the newly spawned process.
+  # Raises NotImplemented when pfork is not supported on the current platform.
+  def pspawn(*argv)
+    raise NotImplemented
+  end
+
   # Spawn a child process using a normal fork + exec.
   #
   # Returns the pid of the newly spawned process.

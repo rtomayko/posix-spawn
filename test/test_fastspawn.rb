@@ -34,4 +34,13 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_equal chpid, pid
     assert_equal 0, status.exitstatus
   end
+
+  def test_pspawn
+    pid = pspawn('true', 'with', 'some stuff')
+    assert pid > 0
+
+    chpid, status = Process.wait2
+    assert_equal chpid, pid
+    assert_equal 0, status.exitstatus
+  end
 end

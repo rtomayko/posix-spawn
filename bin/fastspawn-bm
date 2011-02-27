@@ -27,4 +27,10 @@ bm 40 do |x|
       Process.wait(pid)
     end
   end
+  x.report("pspawn:") do
+    iterations.times do
+      pid = FastSpawn.pspawn('true')
+      Process.wait(pid)
+    end
+  end
 end
