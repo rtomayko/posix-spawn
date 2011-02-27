@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdio.h>
 #include "ruby.h"
 
@@ -7,7 +8,21 @@ static VALUE rb_mFastSpawn;
 static VALUE
 fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 {
-	return Qnil;
+	int i;
+	char *cargv[argc];
+	pid_t pid;
+
+	for(i = 0; i < argc; i++)
+		cargv[i] = StringValuePtr(argv[i]);
+
+	pid = vfork();
+	if(!pid) {
+		execv(cargv[0], cargv);
+		_exit(1);
+	}
+
+	/* return the pid as a Fixnum */
+	return INT2FIX(pid);
 }
 
 void Init_fastspawn()
