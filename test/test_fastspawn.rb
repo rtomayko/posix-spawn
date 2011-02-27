@@ -1,6 +1,3 @@
-rootdir = File.dirname(File.dirname(__FILE__))
-$LOAD_PATH.unshift "#{rootdir}/lib"
-
 require 'test/unit'
 require 'fastspawn'
 

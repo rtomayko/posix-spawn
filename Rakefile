@@ -27,12 +27,8 @@ file "ext/fastspawn.#{dlext}" => FileList["ext/Makefile"] do |f|
 end
 CLEAN.include 'ext/*.{o,bundle,so,dll}'
 
-file "lib/fastspawn.#{dlext}" => "ext/fastspawn.#{dlext}" do |f|
-  cp f.prerequisites, "lib/", :preserve => true
-end
-
 desc 'Build the fastspawn extension'
-task :build => "lib/fastspawn.#{dlext}"
+task :build => "ext/fastspawn.#{dlext}"
 
 # ==========================================================
 # Testing
@@ -41,7 +37,7 @@ task :build => "lib/fastspawn.#{dlext}"
 require 'rake/testtask'
 Rake::TestTask.new 'test' do |t|
   t.test_files = FileList['test/test_*.rb']
-  t.ruby_opts += ['-rubygems'] if defined? Gem
+  t.ruby_opts += ['-Ilib:ext']
 end
 task :test => :build
 
