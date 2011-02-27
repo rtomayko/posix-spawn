@@ -9,9 +9,10 @@ static VALUE
 fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 {
 	int i;
-	char *cargv[argc];
+	char *cargv[argc + 1];
 	pid_t pid;
 
+	cargv[argc] = NULL;
 	for(i = 0; i < argc; i++)
 		cargv[i] = StringValuePtr(argv[i]);
 
