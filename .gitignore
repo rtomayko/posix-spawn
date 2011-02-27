@@ -1,0 +1,5 @@
+/ext/Makefile
+/ext/fastspawn.bundle
+/ext/fastspawn.o
+/ext/ruby-*
+/lib/fastspawn.bundle
