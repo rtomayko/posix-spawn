@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <spawn.h>
+#include <fcntl.h>
 #include "ruby.h"
 
 extern char **environ;
@@ -33,12 +34,16 @@ fastspawn_pspawn(int argc, VALUE *argv, VALUE self)
 	int i;
 	char *cargv[argc + 1];
 	pid_t pid;
+	posix_spawn_file_actions_t fops;
 
 	cargv[argc] = NULL;
 	for(i = 0; i < argc; i++)
 		cargv[i] = StringValuePtr(argv[i]);
 
+	posix_spawn_file_actions_init(&fops);
+	posix_spawn_file_actions_addopen(&fops, 2, "/dev/null", O_WRONLY, 0);
 	posix_spawnp(&pid, cargv[0], NULL, NULL, cargv, environ);
+	posix_spawn_file_actions_destroy(&fops);
 
 	return INT2FIX(pid);
 }
