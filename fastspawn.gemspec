@@ -13,8 +13,10 @@ Gem::Specification.new do |s|
     README
     Rakefile
     ext/extconf.rb
+    ext/fastspawn.c
     fastspawn.gemspec
     lib/fastspawn.rb
+    test/test_fastspawn.rb
   ]
   # = MANIFEST =
   s.test_files = []
