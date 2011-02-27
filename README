@@ -1,0 +1,33 @@
+fastspawn
+
+fork(2) calls slow down as the parent process uses more memory due to the need
+to copy page tables. In many common uses of fork(), where it is followed
+immediately by one of the exec family of functions to spawn child processes
+(Kernel#system, IO::popen, Process::spawn, etc.), it's possible to remove this
+overhead through the use of special kernel interfaces.
+
+The fastspawn library aims to implement a subset of the Ruby 1.9 Process::spawn
+interface in a way that takes advantage of fast process spawning interfaces when
+available and provide sane fallbacks on systems that do not.
+
+STATUS
+
+This is largely a proof of concept project at this point.
+
+USAGE
+
+...
+
+ACKNOWLEDGEMENTS
+
+Copyright (C) by Ryan Tomayko <r@tomayko.com> and Aman Gupta <aman@tmm1.net>.
+
+This library is based heavily on the work of Ivan Zahariev (famzah)'s
+popen-noshell project:
+
+http://code.google.com/p/popen-noshell
+http://blog.famzah.net/2009/11/20/fork-gets-slower-as-parent-process-use-more-memory/
+http://blog.famzah.net/2009/11/20/a-much-faster-popen-and-system-implementation-for-linux/
+
+Because it is based largely on code and concepts from the popen-noshell project,
+fastspawn adopts its license (GPLv3). See the file COPYING for more information.
