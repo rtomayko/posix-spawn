@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "ruby.h"
 
-/* module FastSpawn */
 static VALUE rb_mFastSpawn;
 
 static VALUE
@@ -22,11 +21,11 @@ fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 		_exit(1);
 	}
 
-	/* return the pid as a Fixnum */
 	return INT2FIX(pid);
 }
 
-void Init_fastspawn()
+void
+Init_fastspawn()
 {
 	rb_mFastSpawn = rb_define_module("FastSpawn");
 	rb_define_method(rb_mFastSpawn, "vspawn", fastspawn_vspawn, -1);
