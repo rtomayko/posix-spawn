@@ -18,7 +18,7 @@ fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 
 	pid = vfork();
 	if(!pid) {
-		execv(cargv[0], cargv);
+		execvp(cargv[0], cargv);
 		_exit(1);
 	}
 

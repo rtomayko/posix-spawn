@@ -14,7 +14,7 @@ class FastSpawnTest < Test::Unit::TestCase
   end
 
   def test_vspawn_simple
-    pid = FastSpawn.vspawn('/bin/true')
+    pid = FastSpawn.vspawn('true')
     assert pid > 0
 
     chpid, status = Process.wait2
