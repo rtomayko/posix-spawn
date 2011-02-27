@@ -2,7 +2,7 @@ require 'date'
 require 'digest/md5'
 require 'rake/clean'
 
-task :default => :build
+task :default => :test
 
 # ==========================================================
 # Ruby Extension
@@ -23,7 +23,7 @@ end
 CLEAN.include 'ext/Makefile', 'ext/mkmf.log'
 
 file "ext/fastspawn.#{dlext}" => FileList["ext/Makefile"] do |f|
-  sh 'cd ext && make clean && make && rm -rf conftest.dSYM'
+  chdir('ext') { sh 'make clean && make && rm -rf conftest.dSYM' }
 end
 CLEAN.include 'ext/*.{o,bundle,so,dll}'
 
@@ -34,7 +34,20 @@ end
 desc 'Build the fastspawn extension'
 task :build => "lib/fastspawn.#{dlext}"
 
-# PACKAGING =================================================================
+# ==========================================================
+# Testing
+# ==========================================================
+
+require 'rake/testtask'
+Rake::TestTask.new 'test' do |t|
+  t.test_files = FileList['test/test_*.rb']
+  t.ruby_opts += ['-rubygems'] if defined? Gem
+end
+task :test => :build
+
+# ==========================================================
+# Packaging
+# ==========================================================
 
 require 'rubygems'
 $spec = eval(File.read('fastspawn.gemspec'))
@@ -49,7 +62,9 @@ file package => %w[pkg/ fastspawn.gemspec] + $spec.files do |f|
   mv File.basename(f.name), f.name
 end
 
-# GEMSPEC HELPERS ==========================================================
+# ==========================================================
+# Gemspec Generation
+# ==========================================================
 
 def source_version
   line = File.read('lib/fastspawn.rb')[/^\s*VERSION = .*/]
@@ -75,3 +90,6 @@ file 'fastspawn.gemspec' => FileList['Rakefile','lib/fastspawn.rb'] do |f|
   File.open(f.name, 'w') { |io| io.write(spec) }
   puts "updated #{f.name}"
 end
+
+desc 'Build the fastspawn.gemspec if needed'
+task :gemspec => 'fastspawn.gemspec'
