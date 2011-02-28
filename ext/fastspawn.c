@@ -5,6 +5,13 @@
 #include <unistd.h>
 #include "ruby.h"
 
+#ifndef RARRAY_LEN
+#define RARRAY_LEN(ary) RARRAY(ary)->len
+#endif
+#ifndef RARRAY_PTR
+#define RARRAY_PTR(ary) RARRAY(ary)->ptr
+#endif
+
 extern char **environ;
 
 static VALUE rb_mFastSpawn;
@@ -36,14 +43,14 @@ static VALUE
 fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
 	int i, ret;
-	int argc = RARRAY(argv)->len;
+	int argc = RARRAY_LEN(argv);
 	char *cargv[argc + 1];
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
 
 	cargv[argc] = NULL;
 	for(i = 0; i < argc; i++)
-		cargv[i] = StringValuePtr(RARRAY(argv)->ptr[i]);
+		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
 
 	posix_spawn_file_actions_init(&fops);
 	posix_spawn_file_actions_addopen(&fops, 2, "/dev/null", O_WRONLY, 0);
