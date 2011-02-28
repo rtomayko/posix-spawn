@@ -73,4 +73,4 @@ Init_fastspawn()
 	rb_define_method(rb_mFastSpawn, "_pspawn", rb_fastspawn_pspawn, 3);
 }
 
-/* vim: set noexpandtab sts=0 ts=8 sw=8: */
+/* vim: set noexpandtab sts=0 ts=4 sw=4: */
