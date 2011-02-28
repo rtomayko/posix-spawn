@@ -17,7 +17,7 @@ extern char **environ;
 static VALUE rb_mFastSpawn;
 
 static VALUE
-fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
+rb_fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 {
 	int i;
 	char *cargv[argc + 1];
@@ -40,7 +40,7 @@ fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
+rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
 	int i, ret;
 	int argc = RARRAY_LEN(argv);
@@ -69,8 +69,8 @@ void
 Init_fastspawn()
 {
 	rb_mFastSpawn = rb_define_module("FastSpawn");
-	rb_define_method(rb_mFastSpawn, "_vspawn", fastspawn_vspawn, -1);
-	rb_define_method(rb_mFastSpawn, "_pspawn", fastspawn_pspawn, 3);
+	rb_define_method(rb_mFastSpawn, "_vspawn", rb_fastspawn_vspawn, -1);
+	rb_define_method(rb_mFastSpawn, "_pspawn", rb_fastspawn_pspawn, 3);
 }
 
 /* vim: set noexpandtab sts=0 ts=8 sw=8: */
