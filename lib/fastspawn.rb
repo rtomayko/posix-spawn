@@ -12,7 +12,7 @@ module FastSpawn
   # Returns the pid of the newly spawned process.
   # Raises NotImplemented when vfork is not supported on the current platform.
   def vspawn(*argv)
-    raise NotImplemented
+    _vspawn(*argv)
   end
 
   # Spawn a child process using posix_spawn.
@@ -22,7 +22,8 @@ module FastSpawn
   # Returns the pid of the newly spawned process.
   # Raises NotImplemented when pfork is not supported on the current platform.
   def pspawn(*argv)
-    raise NotImplemented
+    env, argv, options = extract_process_spawn_arguments(*argv)
+    _pspawn(env, argv, options)
   end
 
   # Spawn a child process using a normal fork + exec.

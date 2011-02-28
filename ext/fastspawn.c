@@ -33,20 +33,21 @@ fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-fastspawn_pspawn(int argc, VALUE *argv, VALUE self)
+fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
 	int i, ret;
+	int argc = RARRAY(argv)->len;
 	char *cargv[argc + 1];
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
 
 	cargv[argc] = NULL;
 	for(i = 0; i < argc; i++)
-		cargv[i] = StringValuePtr(argv[i]);
+		cargv[i] = StringValuePtr(RARRAY(argv)->ptr[i]);
 
 	posix_spawn_file_actions_init(&fops);
 	posix_spawn_file_actions_addopen(&fops, 2, "/dev/null", O_WRONLY, 0);
-	ret = posix_spawnp(&pid, cargv[0], NULL, NULL, cargv, environ);
+	ret = posix_spawnp(&pid, cargv[0], &fops, NULL, cargv, environ);
 	posix_spawn_file_actions_destroy(&fops);
 
 	if(ret != 0) {
@@ -61,8 +62,8 @@ void
 Init_fastspawn()
 {
 	rb_mFastSpawn = rb_define_module("FastSpawn");
-	rb_define_method(rb_mFastSpawn, "vspawn", fastspawn_vspawn, -1);
-	rb_define_method(rb_mFastSpawn, "pspawn", fastspawn_pspawn, -1);
+	rb_define_method(rb_mFastSpawn, "_vspawn", fastspawn_vspawn, -1);
+	rb_define_method(rb_mFastSpawn, "_pspawn", fastspawn_pspawn, 3);
 }
 
 /* vim: set noexpandtab sts=0 ts=8 sw=8: */
