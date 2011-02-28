@@ -49,7 +49,7 @@ fastspawn_pspawn(int argc, VALUE *argv, VALUE self)
 	ret = posix_spawnp(&pid, cargv[0], NULL, NULL, cargv, environ);
 	posix_spawn_file_actions_destroy(&fops);
 
-	if (ret != 0) {
+	if(ret != 0) {
 		errno = ret;
 		rb_sys_fail("posix_spawnp");
 	}
