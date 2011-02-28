@@ -31,7 +31,7 @@ fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 static VALUE
 fastspawn_pspawn(int argc, VALUE *argv, VALUE self)
 {
-	int i;
+	int i, ret;
 	char *cargv[argc + 1];
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
@@ -42,7 +42,11 @@ fastspawn_pspawn(int argc, VALUE *argv, VALUE self)
 
 	posix_spawn_file_actions_init(&fops);
 	posix_spawn_file_actions_addopen(&fops, 2, "/dev/null", O_WRONLY, 0);
-	posix_spawnp(&pid, cargv[0], NULL, NULL, cargv, environ);
+	ret = posix_spawnp(&pid, cargv[0], NULL, NULL, cargv, environ);
+	if (ret != 0) {
+		errno = ret;
+		rb_sys_fail("posix_spawnp");
+	}
 	posix_spawn_file_actions_destroy(&fops);
 
 	return INT2FIX(pid);

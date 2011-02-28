@@ -43,4 +43,10 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_equal chpid, pid
     assert_equal 0, status.exitstatus
   end
+
+  def test_psawn_error
+    assert_raises Errno::ENOENT do
+      pspawn('nottrue')
+    end
+  end
 end
