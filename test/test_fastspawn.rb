@@ -32,6 +32,12 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_process_exit_ok pid
   end
 
+  def test_pspawn_error
+    assert_raises Errno::ENOENT do
+      pspawn('nottrue')
+    end
+  end
+
   def test_extract_process_spawn_arguments_with_options
     assert_equal [{}, ['echo', 'hello', 'world'], {:err => :close}],
       extract_process_spawn_arguments('echo', 'hello', 'world', :err => :close)
@@ -56,11 +62,5 @@ class FastSpawnTest < Test::Unit::TestCase
     chpid, status = Process.wait2
     assert_equal chpid, pid
     assert_equal 0, status.exitstatus
-  end
-
-  def test_psawn_error
-    assert_raises Errno::ENOENT do
-      pspawn('nottrue')
-    end
   end
 end
