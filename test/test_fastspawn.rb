@@ -63,20 +63,20 @@ class FastSpawnTest < Test::Unit::TestCase
   # FD => :close options
 
   def test_pspawn_close_option_with_symbolic_standard_stream_names
-    pid = pspawn('/bin/sh', '-c', 'exec 2>/dev/null 100<&0 || true',
+    pid = pspawn('/bin/sh', '-c', 'exec 2>/dev/null 100<&0 || exit 1',
                  :in => :close)
-    assert_process_exit_ok pid
+    assert_process_exit_status pid, 1
 
-    pid = pspawn('/bin/sh', '-c', 'exec 2>/dev/null 101>&1 102>&2 || true',
+    pid = pspawn('/bin/sh', '-c', 'exec 2>/dev/null 101>&1 102>&2 || exit 1',
                  :out => :close, :err => :close)
-    assert_process_exit_ok pid
+    assert_process_exit_status pid, 1
   end
 
   def test_pspawn_close_option_with_fd_number
     rd, wr = IO.pipe
-    pid = pspawn('/bin/sh', '-c', "exec 2>/dev/null 100<&#{rd.to_i} || true",
+    pid = pspawn('/bin/sh', '-c', "exec 2>/dev/null 100<&#{rd.to_i} || exit 1",
                  rd.to_i => :close)
-    assert_process_exit_ok pid
+    assert_process_exit_status pid, 1
 
     assert !rd.closed?
     assert !wr.closed?
@@ -86,9 +86,9 @@ class FastSpawnTest < Test::Unit::TestCase
 
   def test_pspawn_close_option_with_io_object
     rd, wr = IO.pipe
-    pid = pspawn('/bin/sh', '-c', "exec 2>/dev/null 100<&#{rd.to_i} || true",
+    pid = pspawn('/bin/sh', '-c', "exec 2>/dev/null 100<&#{rd.to_i} || exit 1",
                  rd => :close)
-    assert_process_exit_ok pid
+    assert_process_exit_status pid, 1
 
     assert !rd.closed?
     assert !wr.closed?
