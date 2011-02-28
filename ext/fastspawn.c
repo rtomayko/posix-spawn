@@ -1,9 +1,14 @@
+/* we want GNU extensions like POSIX_SPAWN_USEVFORK */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <spawn.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "ruby.h"
+#include <ruby.h>
 
 #ifndef RARRAY_LEN
 #define RARRAY_LEN(ary) RARRAY(ary)->len
