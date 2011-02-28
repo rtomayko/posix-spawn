@@ -19,7 +19,7 @@ static VALUE rb_mFastSpawn;
 static VALUE
 rb_fastspawn_vspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
-	int i, ret;
+	int i;
 	int argc = RARRAY_LEN(argv);
 	char *cargv[argc + 1];
 	pid_t pid;
