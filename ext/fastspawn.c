@@ -1,7 +1,8 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <spawn.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <spawn.h>
+#include <stdio.h>
+#include <unistd.h>
 #include "ruby.h"
 
 extern char **environ;
