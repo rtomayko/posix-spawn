@@ -48,6 +48,7 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	char *cargv[argc + 1];
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
+	posix_spawnattr_t attr;
 
 	cargv[argc] = NULL;
 	for(i = 0; i < argc; i++)
@@ -55,8 +56,16 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 
 	posix_spawn_file_actions_init(&fops);
 	posix_spawn_file_actions_addopen(&fops, 2, "/dev/null", O_WRONLY, 0);
-	ret = posix_spawnp(&pid, cargv[0], &fops, NULL, cargv, environ);
+
+	posix_spawnattr_init(&attr);
+#ifdef POSIX_SPAWN_USEVFORK
+	posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
+#endif
+
+	ret = posix_spawnp(&pid, cargv[0], &fops, &attr, cargv, environ);
+
 	posix_spawn_file_actions_destroy(&fops);
+	posix_spawnattr_destroy(&attr);
 
 	if(ret != 0) {
 		errno = ret;
