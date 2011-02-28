@@ -130,15 +130,15 @@ fastspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_t
 }
 
 /*
- * Hash iterator that sets up the posix_spawn_file_actions_t with adddup2
- * operations. Only hash pairs whose key and value represent fd numbers are
- * processed.
+ * Hash iterator that sets up the posix_spawn_file_actions_t with adddup2 +
+ * clone operations for all redirects. Only hash pairs whose key and value
+ * represent fd numbers are processed.
  *
  * Returns ST_DELETE when an adddup2 operation was added; ST_CONTINUE when
  * no operation was performed.
  */
 static int
-fastspawn_file_actions_adddup2(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+fastspawn_file_actions_reopen(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
 	int fd, newfd;
 
@@ -151,6 +151,7 @@ fastspawn_file_actions_adddup2(VALUE key, VALUE val, posix_spawn_file_actions_t 
 		return ST_CONTINUE;
 
 	posix_spawn_file_actions_adddup2(fops, fd, newfd);
+	posix_spawn_file_actions_addclose(fops, fd);
 	return ST_DELETE;
 }
 
@@ -170,7 +171,7 @@ fastspawn_file_actions_operations_iter(VALUE key, VALUE val, posix_spawn_file_ac
 	act = fastspawn_file_actions_addclose(key, val, fops);
 	if (act != ST_CONTINUE) return act;
 
-	act = fastspawn_file_actions_adddup2(key, val, fops);
+	act = fastspawn_file_actions_reopen(key, val, fops);
 	if (act != ST_CONTINUE) return act;
 
 	return ST_CONTINUE;
