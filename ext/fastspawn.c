@@ -46,12 +46,19 @@ rb_fastspawn_vspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	return INT2FIX(pid);
 }
 
+/* Hash iterator that sets up the posix_spawn_file_actions_t with addclose
+ * instructions. Only hash pairs whose value is :close are processed. Keys may
+ * be the :in, :out, :err, an IO object, or a Fixnum fd number.
+ *
+ * Returns ST_DELETE when an addclose instruction was added; ST_CONTINUE when
+ * no operation was performed.
+ */
 static int
 fastspawn_file_actions_addclose_iter(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
 	int fd;
 
-	/* we only care about { (FD|:in|:out|:err) => :close } */
+	/* we only care about { (IO|FD|:in|:out|:err) => :close } */
 	if (SYM2ID(val) != rb_intern("close"))
 		return ST_CONTINUE;
 
