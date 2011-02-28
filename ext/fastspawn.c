@@ -69,6 +69,14 @@ fastspawn_file_actions_addclose_iter(VALUE key, VALUE val, posix_spawn_file_acti
 			else if (SYM2ID(key) == rb_intern("err"))  fd = 2;
 			break;
 
+		case T_OBJECT:
+			/* IO => :close */
+			if (rb_respond_to(key, rb_intern("to_io"))) {
+				key = rb_funcall(key, rb_intern("to_io"), 0);
+				fd = FIX2INT(rb_funcall(key, rb_intern("to_i"), 0));
+			}
+			break;
+
 		default:
 			break;
 	}
