@@ -5,17 +5,6 @@ module FastSpawn
   # fail fast when extension methods already defined due to twice-loading
   raise LoadError, "fastspawn extension already loaded" if method_defined?(:vspawn)
 
-  # Spawn a child process using fast vfork + exec.
-  #
-  # argv - Array of command line arguments passed to exec.
-  #
-  # Returns the pid of the newly spawned process.
-  # Raises NotImplemented when vfork is not supported on the current platform.
-  def vspawn(*argv)
-    env, argv, options = extract_process_spawn_arguments(*argv)
-    _vspawn(env, argv, options)
-  end
-
   # Spawn a child process using posix_spawn.
   #
   # argv - Array of command line arguments passed to exec.
