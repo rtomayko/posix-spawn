@@ -32,6 +32,9 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_process_exit_ok pid
   end
 
+  ##
+  # Environ
+
   def test_pspawn_inherit_env
     ENV['PSPAWN'] = 'parent'
     pid = pspawn('/bin/sh', '-c', 'test "$PSPAWN" = "parent"')
@@ -55,6 +58,9 @@ class FastSpawnTest < Test::Unit::TestCase
   ensure
     ENV.delete('PSPAWN')
   end
+
+  ##
+  # FD => :close options
 
   def test_pspawn_close_option_with_symbolic_standard_stream_names
     pid = pspawn('/bin/sh', '-c', 'exec 2>/dev/null 100<&0 || true',
@@ -90,7 +96,16 @@ class FastSpawnTest < Test::Unit::TestCase
     [rd, wr].each { |fd| fd.close rescue nil }
   end
 
-  def test_pspawn_redirect_fds
+  def test_pspawn_close_invalid_fd_raises_exception
+    assert_raise Errno::EBADF do
+      pspawn("echo", "hiya", 250 => :close)
+    end
+  end
+
+  ##
+  # FD => FD options
+
+  def test_pspawn_redirect_fds_with_symbolic_names_and_io_objects
     rd, wr = IO.pipe
     pid = pspawn("echo", "hello world", :out => wr, rd => :close)
     wr.close
@@ -100,6 +115,26 @@ class FastSpawnTest < Test::Unit::TestCase
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
   end
+
+  def test_pspawn_redirect_fds_with_fd_numbers
+    rd, wr = IO.pipe
+    pid = pspawn("echo", "hello world", 1 => wr.fileno, rd.fileno => :close)
+    wr.close
+    output = rd.read
+    assert_equal "hello world\n", output
+    assert_process_exit_ok pid
+  ensure
+    [rd, wr].each { |fd| fd.close rescue nil }
+  end
+
+  def test_pspawn_redirect_invalid_fds_raises_exception
+    assert_raise Errno::EBADF do
+      pspawn("echo", "hiya", 250 => 3)
+    end
+  end
+
+  ##
+  # Options Preprocessing
 
   def test_extract_process_spawn_arguments_with_options
     assert_equal [{}, ['echo', 'hello', 'world'], {:err => :close}],
