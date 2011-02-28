@@ -7,9 +7,14 @@
 #include <fcntl.h>
 #include <spawn.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <ruby.h>
 #include <st.h>
+
+#ifndef RUBY_VM
+#include "node.h"
+#endif
 
 #ifndef RARRAY_LEN
 #define RARRAY_LEN(ary) RARRAY(ary)->len
@@ -17,8 +22,16 @@
 #ifndef RARRAY_PTR
 #define RARRAY_PTR(ary) RARRAY(ary)->ptr
 #endif
+#ifndef RHASH_SIZE
+#define RHASH_SIZE(hash) RHASH(hash)->tbl->num_entries
+#endif
 
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#else
 extern char **environ;
+#endif
 
 static VALUE rb_mFastSpawn;
 
@@ -102,15 +115,100 @@ fastspawn_file_actions_addclose(posix_spawn_file_actions_t *fops, VALUE options)
 	rb_hash_foreach(options, fastspawn_file_actions_addclose_iter, (VALUE)fops);
 }
 
+static int
+each_env_check_i(VALUE key, VALUE val, VALUE arg)
+{
+	StringValuePtr(key);
+	if (!NIL_P(val)) StringValuePtr(val);
+	return ST_CONTINUE;
+}
+
+static int
+each_env_i(VALUE key, VALUE val, VALUE arg)
+{
+	char *name = StringValuePtr(key);
+	size_t len = strlen(name);
+
+	/*
+	 * Delete any existing values for this variable before inserting the new value.
+	 * This implementation was copied from glibc's unsetenv().
+	 */
+	char **ep = (char **)arg;
+	while (*ep != NULL)
+		if (!strncmp (*ep, name, len) && (*ep)[len] == '=')
+		{
+			/* Found it.  Remove this pointer by moving later ones back.  */
+			char **dp = ep;
+
+			do
+				dp[0] = dp[1];
+			while (*dp++);
+			/* Continue the loop in case NAME appears again.  */
+		}
+		else
+			++ep;
+
+	/*
+	 * Insert the new value if we have one. We can assume there is space
+	 * at the end of the list, since ep was preallocated to be big enough
+	 * for the new entries.
+	 */
+	if (RTEST(val)) {
+		char **ep = (char **)arg;
+		char *cval = StringValuePtr(val);
+
+		size_t cval_len = strlen(cval);
+		size_t ep_len = len + 1 + cval_len + 1; /* +2 for null terminator and '=' separator */
+
+		/* find the last entry */
+		while (*ep != NULL) ++ep;
+		*ep = malloc(ep_len);
+
+		strncpy(*ep, name, len);
+		(*ep)[len] = '=';
+		strncpy(*ep + len + 1, cval, cval_len);
+		(*ep)[ep_len-1] = 0;
+	}
+
+	return ST_CONTINUE;
+}
+
 static VALUE
 rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
 	int i, ret;
 	int argc = RARRAY_LEN(argv);
+	char **envp = NULL;
 	char *cargv[argc + 1];
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
 	posix_spawnattr_t attr;
+
+	if (RTEST(env)) {
+		/*
+		 * Make sure env is a hash, and all keys and values are strings.
+		 * We do this before allocating space for the new environment to
+		 * prevent a leak when raising an exception after the calloc() below.
+		 */
+		Check_Type(env, T_HASH);
+		rb_hash_foreach(env, each_env_check_i, 0);
+
+		if (RHASH_SIZE(env) > 0) {
+			char **curr = environ;
+			int size = 0;
+			if (curr) {
+				while (*curr != NULL) ++curr, ++size;
+			}
+
+			char **new_env = calloc(size+RHASH_SIZE(env)+1, sizeof(char*));
+			for (i = 0; i < size; i++) {
+				new_env[i] = strdup(environ[i]);
+			}
+			envp = new_env;
+
+			rb_hash_foreach(env, each_env_i, (VALUE)envp);
+		}
+	}
 
 	cargv[argc] = NULL;
 	for (i = 0; i < argc; i++)
@@ -125,10 +223,15 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
 #endif
 
-	ret = posix_spawnp(&pid, cargv[0], &fops, &attr, cargv, environ);
+	ret = posix_spawnp(&pid, cargv[0], &fops, &attr, cargv, envp ? envp : environ);
 
 	posix_spawn_file_actions_destroy(&fops);
 	posix_spawnattr_destroy(&attr);
+	if (envp) {
+		char **ep = envp;
+		while (*ep != NULL) free(*ep), ++ep;
+		free(envp);
+	}
 
 	if (ret != 0) {
 		errno = ret;

@@ -32,6 +32,30 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_process_exit_ok pid
   end
 
+  def test_pspawn_inherit_env
+    ENV['PSPAWN'] = 'parent'
+    pid = pspawn('/bin/sh', '-c', 'test "$PSPAWN" = "parent"')
+    assert_process_exit_ok pid
+  ensure
+    ENV.delete('PSPAWN')
+  end
+
+  def test_pspawn_set_env
+    ENV['PSPAWN'] = 'parent'
+    pid = pspawn({'PSPAWN'=>'child'}, '/bin/sh', '-c', 'test "$PSPAWN" = "child"')
+    assert_process_exit_ok pid
+  ensure
+    ENV.delete('PSPAWN')
+  end
+
+  def test_pspawn_unset_env
+    ENV['PSPAWN'] = 'parent'
+    pid = pspawn({'PSPAWN'=>nil}, '/bin/sh', '-c', 'test -z "$PSPAWN"')
+    assert_process_exit_ok pid
+  ensure
+    ENV.delete('PSPAWN')
+  end
+
   def test_pspawn_close_option_with_symbolic_standard_stream_names
     pid = pspawn('/bin/sh', '-c', 'exec 2>/dev/null 100<&0 || true',
                  :in => :close)
