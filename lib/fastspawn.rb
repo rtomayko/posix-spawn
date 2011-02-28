@@ -67,6 +67,7 @@ module FastSpawn
       else
         {}
       end
+    env.merge!(options.delete(:env)) if options.key?(:env)
 
     # remaining arguments are the argv. it's possible for this to be an single
     # element array so pull it out if so.
