@@ -59,7 +59,7 @@ fastspawn_file_actions_addclose_iter(VALUE key, VALUE val, posix_spawn_file_acti
 	int fd;
 
 	/* we only care about { (IO|FD|:in|:out|:err) => :close } */
-	if (SYM2ID(val) != rb_intern("close"))
+	if (TYPE(val) == T_SYMBOL && SYM2ID(val) != rb_intern("close"))
 		return ST_CONTINUE;
 
 	fd  = -1;
