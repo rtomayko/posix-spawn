@@ -31,6 +31,7 @@ module FastSpawn
   #
   # Returns the pid of the newly spawned process.
   def fspawn(*argv)
+    env, argv, options = extract_process_spawn_arguments(*argv)
     fork do
       exec(*argv)
       exit! 1
