@@ -53,7 +53,7 @@ Init_fastspawn()
 {
 	rb_mFastSpawn = rb_define_module("FastSpawn");
 	rb_define_method(rb_mFastSpawn, "vspawn", fastspawn_vspawn, -1);
-	rb_define_method(rb_mFastSpawn, "pspawn", fastspawn_vspawn, -1);
+	rb_define_method(rb_mFastSpawn, "pspawn", fastspawn_pspawn, -1);
 }
 
 /* vim: set noexpandtab sts=0 ts=8 sw=8: */
