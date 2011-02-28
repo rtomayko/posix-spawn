@@ -17,15 +17,16 @@ extern char **environ;
 static VALUE rb_mFastSpawn;
 
 static VALUE
-rb_fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
+rb_fastspawn_vspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
-	int i;
+	int i, ret;
+	int argc = RARRAY_LEN(argv);
 	char *cargv[argc + 1];
 	pid_t pid;
 
 	cargv[argc] = NULL;
 	for(i = 0; i < argc; i++)
-		cargv[i] = StringValuePtr(argv[i]);
+		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
 
 	pid = vfork();
 	if(pid < 0) {
@@ -69,7 +70,7 @@ void
 Init_fastspawn()
 {
 	rb_mFastSpawn = rb_define_module("FastSpawn");
-	rb_define_method(rb_mFastSpawn, "_vspawn", rb_fastspawn_vspawn, -1);
+	rb_define_method(rb_mFastSpawn, "_vspawn", rb_fastspawn_vspawn, 3);
 	rb_define_method(rb_mFastSpawn, "_pspawn", rb_fastspawn_pspawn, 3);
 }
 
