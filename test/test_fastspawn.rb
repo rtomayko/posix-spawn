@@ -19,26 +19,24 @@ class FastSpawnTest < Test::Unit::TestCase
 
   def test_vspawn_with_argv
     pid = vspawn('true', 'with', 'some arguments')
-    assert pid > 0
-
-    chpid, status = Process.wait2
-    assert_equal chpid, pid
-    assert_equal 0, status.exitstatus
+    assert_process_exit_ok pid
   end
 
   def test_fspawn
     pid = fspawn('true', 'with', 'some stuff')
-    assert pid > 0
-
-    chpid, status = Process.wait2
-    assert_equal chpid, pid
-    assert_equal 0, status.exitstatus
+    assert_process_exit_ok pid
   end
 
   def test_pspawn
     pid = pspawn('true', 'with', 'some stuff')
-    assert pid > 0
+    assert_process_exit_ok pid
+  end
 
+  ##
+  # Assertion Helpers
+
+  def assert_process_exit_ok(pid)
+    assert pid > 0
     chpid, status = Process.wait2
     assert_equal chpid, pid
     assert_equal 0, status.exitstatus
