@@ -59,8 +59,8 @@ class FastSpawnTest < Test::Unit::TestCase
 
   def assert_process_exit_ok(pid)
     assert pid > 0
-    chpid, status = Process.wait2(pid)
+    chpid = Process.wait(pid)
     assert_equal chpid, pid
-    assert_equal 0, status.exitstatus
+    assert_equal 0, $?.exitstatus
   end
 end
