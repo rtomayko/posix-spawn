@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <ruby.h>
+#include <st.h>
 
 #ifndef RARRAY_LEN
 #define RARRAY_LEN(ary) RARRAY(ary)->len
@@ -45,6 +46,40 @@ rb_fastspawn_vspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	return INT2FIX(pid);
 }
 
+static int
+fastspawn_file_actions_addclose_iter(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+{
+	int fd, res;
+
+	/* we only care about { (FD|:in|:out|:err) => :close } */
+	if (SYM2ID(val) != rb_intern("close"))
+		return ST_CONTINUE;
+
+	res = ST_CONTINUE;
+	switch (TYPE(key)) {
+		case T_SYMBOL:
+			if      (SYM2ID(key) == rb_intern("in"))   fd = 0;
+			else if (SYM2ID(key) == rb_intern("out"))  fd = 1;
+			else if (SYM2ID(key) == rb_intern("err"))  fd = 2;
+			else break;
+
+			posix_spawn_file_actions_addclose(fops, fd);
+			res = ST_DELETE;
+			break;
+
+		default:
+			break;
+	}
+
+	return ST_CONTINUE;
+}
+
+static void
+fastspawn_file_actions_addclose(posix_spawn_file_actions_t *fops, VALUE options)
+{
+	rb_hash_foreach(options, fastspawn_file_actions_addclose_iter, (VALUE)fops);
+}
+
 static VALUE
 rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
@@ -60,6 +95,7 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
 
 	posix_spawn_file_actions_init(&fops);
+	fastspawn_file_actions_addclose(&fops, options);
 	posix_spawn_file_actions_addopen(&fops, 2, "/dev/null", O_WRONLY, 0);
 
 	posix_spawnattr_init(&attr);

@@ -32,6 +32,15 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_process_exit_ok pid
   end
 
+  # TODO these don't really test that the fds were closed so well
+  def test_pspawn_close_option_with_symbolic_standard_stream_names
+    pid = pspawn('cat', :in => :close)
+    assert_process_exit_status pid, 1
+
+    pid = pspawn('cat', :in => :close, :out => :close, :err => :close)
+    assert_process_exit_status pid, 1
+  end
+
   def test_extract_process_spawn_arguments_with_options
     assert_equal [{}, ['echo', 'hello', 'world'], {:err => :close}],
       extract_process_spawn_arguments('echo', 'hello', 'world', :err => :close)
@@ -52,9 +61,13 @@ class FastSpawnTest < Test::Unit::TestCase
   # Assertion Helpers
 
   def assert_process_exit_ok(pid)
-    assert pid > 0
+    assert_process_exit_status pid, 0
+  end
+
+  def assert_process_exit_status(pid, status)
+    assert pid.to_i > 0, "pid [#{pid}] should be > 0"
     chpid = Process.wait(pid)
     assert_equal chpid, pid
-    assert_equal 0, $?.exitstatus
+    assert_equal status, $?.exitstatus
   end
 end
