@@ -32,6 +32,22 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_process_exit_ok pid
   end
 
+  def test_extract_process_spawn_arguments_with_options
+    assert_equal [{}, ['echo', 'hello', 'world'], {:err => :close}],
+      extract_process_spawn_arguments('echo', 'hello', 'world', :err => :close)
+    assert_equal [{}, ['echo', 'hello', 'world'], {:err => :close}],
+      extract_process_spawn_arguments(['echo', 'hello', 'world'], :err => :close)
+  end
+
+  def test_extract_process_spawn_arguments_with_options_and_env
+    options = {:err => :close}
+    env = {'X' => 'Y'}
+    assert_equal [env, ['echo', 'hello world'], options],
+      extract_process_spawn_arguments(env, 'echo', 'hello world', options)
+    assert_equal [env, ['echo', 'hello world'], options],
+      extract_process_spawn_arguments(env, ['echo', 'hello world'], options)
+  end
+
   ##
   # Assertion Helpers
 
