@@ -2,7 +2,7 @@ Gem::Specification.new do |s|
   s.name = 'fastspawn'
   s.version = '0.1'
   s.summary = "Fast process spawner"
-  s.date = '2011-02-26'
+  s.date = '2011-02-28'
   s.email = 'r@tomayko.com'
   s.homepage = 'http://github.com/rtomayko/fastspawn'
   s.has_rdoc = false
@@ -10,8 +10,10 @@ Gem::Specification.new do |s|
   # = MANIFEST =
   s.files = %w[
     COPYING
+    HACKING
     README
     Rakefile
+    bin/fastspawn-bm
     ext/extconf.rb
     ext/fastspawn.c
     fastspawn.gemspec
