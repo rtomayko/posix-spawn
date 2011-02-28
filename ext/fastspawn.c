@@ -59,15 +59,60 @@ rb_fastspawn_vspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	return INT2FIX(pid);
 }
 
-/* Hash iterator that sets up the posix_spawn_file_actions_t with addclose
- * instructions. Only hash pairs whose value is :close are processed. Keys may
+/* Determine the fd number for a Ruby object VALUE.
+ *
+ * obj - This can be any valid Ruby object, but only the following return
+ *       an actual fd number:
+ *         - The symbols :in, :out, or :err for fds 0, 1, or 2.
+ *         - An IO object. (IO#fileno is returned)
+ *         - A Fixnum.
+ *
+ * Returns the fd number >= 0 if one could be established, or -1 if the object
+ * does not map to an fd.
+ */
+static int
+fastspawn_obj_to_fd(VALUE obj)
+{
+	int fd = -1;
+	switch (TYPE(obj)) {
+		case T_FIXNUM:
+			/* Fixnum fd number */
+			fd = FIX2INT(obj);
+			break;
+
+		case T_SYMBOL:
+			/* (:in|:out|:err) */
+			if      (SYM2ID(obj) == rb_intern("in"))   fd = 0;
+			else if (SYM2ID(obj) == rb_intern("out"))  fd = 1;
+			else if (SYM2ID(obj) == rb_intern("err"))  fd = 2;
+			break;
+
+		case T_FILE:
+			/* IO object */
+			fd = FIX2INT(rb_funcall(obj, rb_intern("fileno"), 0));
+			break;
+
+		case T_OBJECT:
+			/* some other object */
+			if (rb_respond_to(obj, rb_intern("to_io"))) {
+				obj = rb_funcall(obj, rb_intern("to_io"), 0);
+				fd = FIX2INT(rb_funcall(obj, rb_intern("fileno"), 0));
+			}
+			break;
+	}
+	return fd;
+}
+
+/*
+ * Hash iterator that sets up the posix_spawn_file_actions_t with addclose
+ * operations. Only hash pairs whose value is :close are processed. Keys may
  * be the :in, :out, :err, an IO object, or a Fixnum fd number.
  *
- * Returns ST_DELETE when an addclose instruction was added; ST_CONTINUE when
+ * Returns ST_DELETE when an addclose operation was added; ST_CONTINUE when
  * no operation was performed.
  */
 static int
-fastspawn_file_actions_addclose_iter(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+fastspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
 	int fd;
 
@@ -75,32 +120,7 @@ fastspawn_file_actions_addclose_iter(VALUE key, VALUE val, posix_spawn_file_acti
 	if (TYPE(val) != T_SYMBOL || SYM2ID(val) != rb_intern("close"))
 		return ST_CONTINUE;
 
-	fd  = -1;
-	switch (TYPE(key)) {
-		case T_FIXNUM:
-			/* FD => :close */
-			fd = FIX2INT(key);
-			break;
-
-		case T_SYMBOL:
-			/* (:in|:out|:err) => :close */
-			if      (SYM2ID(key) == rb_intern("in"))   fd = 0;
-			else if (SYM2ID(key) == rb_intern("out"))  fd = 1;
-			else if (SYM2ID(key) == rb_intern("err"))  fd = 2;
-			break;
-
-		case T_OBJECT:
-			/* IO => :close */
-			if (rb_respond_to(key, rb_intern("to_io"))) {
-				key = rb_funcall(key, rb_intern("to_io"), 0);
-				fd = FIX2INT(rb_funcall(key, rb_intern("fileno"), 0));
-			}
-			break;
-
-		default:
-			break;
-	}
-
+	fd  = fastspawn_obj_to_fd(key);
 	if (fd >= 0) {
 		posix_spawn_file_actions_addclose(fops, fd);
 		return ST_DELETE;
@@ -109,10 +129,65 @@ fastspawn_file_actions_addclose_iter(VALUE key, VALUE val, posix_spawn_file_acti
 	}
 }
 
-static void
-fastspawn_file_actions_addclose(posix_spawn_file_actions_t *fops, VALUE options)
+/*
+ * Hash iterator that sets up the posix_spawn_file_actions_t with adddup2
+ * operations. Only hash pairs whose key and value represent fd numbers are
+ * processed.
+ *
+ * Returns ST_DELETE when an adddup2 operation was added; ST_CONTINUE when
+ * no operation was performed.
+ */
+static int
+fastspawn_file_actions_adddup2(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
-	rb_hash_foreach(options, fastspawn_file_actions_addclose_iter, (VALUE)fops);
+	int fd, newfd;
+
+	newfd = fastspawn_obj_to_fd(key);
+	if (newfd < 0)
+		return ST_CONTINUE;
+
+	fd = fastspawn_obj_to_fd(val);
+	if (fd < 0)
+		return ST_CONTINUE;
+
+	posix_spawn_file_actions_adddup2(fops, fd, newfd);
+	return ST_DELETE;
+}
+
+/*
+ * Main entry point for iterating over the options hash to perform file actions.
+ * This function dispatches to the addclose and adddup2 functions, stopping once
+ * an operation was added.
+ *
+ * Returns ST_DELETE if one of the handlers performed an operation; ST_CONTINUE
+ * if not.
+ */
+static int
+fastspawn_file_actions_operations_iter(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+{
+	int act;
+
+	act = fastspawn_file_actions_addclose(key, val, fops);
+	if (act != ST_CONTINUE) return act;
+
+	act = fastspawn_file_actions_adddup2(key, val, fops);
+	if (act != ST_CONTINUE) return act;
+
+	return ST_CONTINUE;
+}
+
+/*
+ * Initialize the posix_spawn_file_actions_t structure and add operations from
+ * the options hash. Keys in the options Hash that are processed by handlers are
+ * removed.
+ *
+ * Returns nothing.
+ */
+static void
+fastspawn_file_actions_init(posix_spawn_file_actions_t *fops, VALUE options)
+{
+	posix_spawn_file_actions_init(fops);
+	rb_hash_foreach(options, fastspawn_file_actions_operations_iter, (VALUE)fops);
 }
 
 static int
@@ -173,6 +248,9 @@ each_env_i(VALUE key, VALUE val, VALUE arg)
 	return ST_CONTINUE;
 }
 
+/*
+ * FastSpawn#_pspawn(env, argv, options)
+ */
 static VALUE
 rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
@@ -214,9 +292,7 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	for (i = 0; i < argc; i++)
 		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
 
-	posix_spawn_file_actions_init(&fops);
-	fastspawn_file_actions_addclose(&fops, options);
-	posix_spawn_file_actions_addopen(&fops, 2, "/dev/null", O_WRONLY, 0);
+	fastspawn_file_actions_init(&fops, options);
 
 	posix_spawnattr_init(&attr);
 #ifdef POSIX_SPAWN_USEVFORK

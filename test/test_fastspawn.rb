@@ -90,6 +90,17 @@ class FastSpawnTest < Test::Unit::TestCase
     [rd, wr].each { |fd| fd.close rescue nil }
   end
 
+  def test_pspawn_redirect_fds
+    rd, wr = IO.pipe
+    pid = pspawn("echo", "hello world", :out => wr, rd => :close)
+    wr.close
+    output = rd.read
+    assert_equal "hello world\n", output
+    assert_process_exit_ok pid
+  ensure
+    [rd, wr].each { |fd| fd.close rescue nil }
+  end
+
   def test_extract_process_spawn_arguments_with_options
     assert_equal [{}, ['echo', 'hello', 'world'], {:err => :close}],
       extract_process_spawn_arguments('echo', 'hello', 'world', :err => :close)
