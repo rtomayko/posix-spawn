@@ -31,14 +31,14 @@ rb_fastspawn_vspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	pid_t pid;
 
 	cargv[argc] = NULL;
-	for(i = 0; i < argc; i++)
+	for (i = 0; i < argc; i++)
 		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
 
 	pid = vfork();
-	if(pid < 0) {
+	if (pid < 0) {
 		rb_sys_fail("vfork");
 	}
-	if(!pid) {
+	if (!pid) {
 		execvp(cargv[0], cargv);
 		_exit(1);
 	}
@@ -113,7 +113,7 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	posix_spawnattr_t attr;
 
 	cargv[argc] = NULL;
-	for(i = 0; i < argc; i++)
+	for (i = 0; i < argc; i++)
 		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
 
 	posix_spawn_file_actions_init(&fops);
@@ -130,7 +130,7 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	posix_spawn_file_actions_destroy(&fops);
 	posix_spawnattr_destroy(&attr);
 
-	if(ret != 0) {
+	if (ret != 0) {
 		errno = ret;
 		rb_sys_fail("posix_spawnp");
 	}
