@@ -1,33 +1,77 @@
 fastspawn
 
 fork(2) calls slow down as the parent process uses more memory due to the need
-to copy page tables. In many common uses of fork(), where it is followed
-immediately by one of the exec family of functions to spawn child processes
-(Kernel#system, IO::popen, Process::spawn, etc.), it's possible to remove this
-overhead through the use of special kernel interfaces.
+to copy page tables. In many common uses of fork(), where it is followed by one
+of the exec family of functions to spawn child processes (Kernel#system,
+IO::popen, Process::spawn, etc.), it's possible to remove this overhead by using
+the use of special process spawning interfaces (posix_spawn(), vfork(), etc.)
 
 The fastspawn library aims to implement a subset of the Ruby 1.9 Process::spawn
 interface in a way that takes advantage of fast process spawning interfaces when
 available and provide sane fallbacks on systems that do not.
 
-STATUS
-
-This is largely a proof of concept project at this point.
-
 USAGE
 
 ...
+
+STATUS
+
+These options to Process::spawn are currently supported:
+
+  env: hash
+    name => val : set the environment variable
+    name => nil : unset the environment variable
+  command...:
+    cmdname, arg1, ...          : command name and one or more arguments (no shell)
+  options: hash
+    redirection:
+      key:
+        FD              : single file descriptor in child process
+      value:
+        FD                        : redirect to the file descriptor in parent process
+        :close                    : close the file descriptor in child process
+      FD is one of follows
+        :in     : the file descriptor 0 which is the standard input
+        :out    : the file descriptor 1 which is the standard output
+        :err    : the file descriptor 2 which is the standard error
+        integer : the file descriptor of specified the integer
+        io      : the file descriptor specified as io.fileno
+
+These options are NOT currently supported:
+
+  command...:
+    commandline                 : command line string which is passed to a shell
+    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
+  options: hash
+    clearing environment variables:
+      :unsetenv_others => true   : clear environment variables except specified by env
+      :unsetenv_others => false  : don't clear (default)
+    process group:
+      :pgroup => true or 0 : make a new process group
+      :pgroup => pgid      : join to specified process group
+      :pgroup => nil       : don't change the process group (default)
+    resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
+      :rlimit_resourcename => limit
+      :rlimit_resourcename => [cur_limit, max_limit]
+    current directory:
+      :chdir => str
+    umask:
+      :umask => int
+    redirection:
+      key:
+        [FD, FD, ...]   : multiple file descriptor in child process
+      value:
+        string                    : redirect to file with open(string, "r" or "w")
+        [string]                  : redirect to file with open(string, File::RDONLY)
+        [string, open_mode]       : redirect to file with open(string, open_mode, 0644)
+        [string, open_mode, perm] : redirect to file with open(string, open_mode, perm)
+        [:child, FD]              : redirect to the redirected file descriptor
+    file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
+      :close_others => false : inherit fds (default for system and exec)
+      :close_others => true  : don't inherit (default for spawn and IO.popen)
 
 ACKNOWLEDGEMENTS
 
 Copyright (C) by Ryan Tomayko <r@tomayko.com> and Aman Gupta <aman@tmm1.net>.
 
-This library is based heavily on the work of Ivan Zahariev (famzah)'s
-popen-noshell project:
-
-http://code.google.com/p/popen-noshell
-http://blog.famzah.net/2009/11/20/fork-gets-slower-as-parent-process-use-more-memory/
-http://blog.famzah.net/2009/11/20/a-much-faster-popen-and-system-implementation-for-linux/
-
-Because it is based largely on code and concepts from the popen-noshell project,
-fastspawn adopts its license (GPLv3). See the file COPYING for more information.
+See the COPYING file for more information on license and redistribution.
