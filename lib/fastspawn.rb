@@ -78,7 +78,24 @@ module FastSpawn
         args
       end
 
+    flatten_process_spawn_options!(options)
     [env, argv, options]
+  end
+
+  # Convert { [fd1, fd2, ...] => (:close|fd) } options to individual keys,
+  # like: { fd1 => :close, fd2 => :close }. This just makes life easier for the
+  # spawn implementations.
+  #
+  # options - The options hash. This is modified in place.
+  #
+  # Returns the modified options hash.
+  def flatten_process_spawn_options!(options)
+    options.each do |key, value|
+      if key.respond_to?(:to_ary)
+        key.to_ary.each { |fd| options[fd] = value }
+        options.delete(key)
+      end
+    end
   end
 end
 

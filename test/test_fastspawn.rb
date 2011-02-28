@@ -133,6 +133,15 @@ class FastSpawnTest < Test::Unit::TestCase
     end
   end
 
+  def test_pspawn_closing_multiple_fds_with_array_keys
+    rd, wr = IO.pipe
+    pid = pspawn('/bin/sh', '-c', "exec 2>/dev/null 101>&#{wr.to_i} || exit 1",
+                 [rd, wr, :out] => :close)
+    assert_process_exit_status pid, 1
+  ensure
+    [rd, wr].each { |fd| fd.close rescue nil }
+  end
+
   ##
   # Options Preprocessing
 

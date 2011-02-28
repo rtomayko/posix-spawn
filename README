@@ -27,6 +27,7 @@ These options to Process::spawn are currently supported:
     redirection:
       key:
         FD              : single file descriptor in child process
+        [FD, FD, ...]   : multiple file descriptor in child process
       value:
         FD                        : redirect to the file descriptor in parent process
         :close                    : close the file descriptor in child process
@@ -58,8 +59,6 @@ These options are NOT currently supported:
     umask:
       :umask => int
     redirection:
-      key:
-        [FD, FD, ...]   : multiple file descriptor in child process
       value:
         string                    : redirect to file with open(string, "r" or "w")
         [string]                  : redirect to file with open(string, File::RDONLY)
