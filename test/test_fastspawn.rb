@@ -32,13 +32,26 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_process_exit_ok pid
   end
 
-  # TODO these don't really test that the fds were closed so well
   def test_pspawn_close_option_with_symbolic_standard_stream_names
-    pid = pspawn('cat', :in => :close)
-    assert_process_exit_status pid, 1
+    pid = pspawn('/bin/sh', '-c', 'exec 2>/dev/null 100<&0 || true',
+                 :in => :close)
+    assert_process_exit_ok pid
 
-    pid = pspawn('cat', :in => :close, :out => :close, :err => :close)
-    assert_process_exit_status pid, 1
+    pid = pspawn('/bin/sh', '-c', 'exec 2>/dev/null 101>&1 102>&2 || true',
+                 :out => :close, :err => :close)
+    assert_process_exit_ok pid
+  end
+
+  def test_pspawn_close_option_with_fd_number
+    rd, wr = IO.pipe
+    pid = pspawn('/bin/sh', '-c', "exec 2>/dev/null 100<&#{rd.to_i} || true",
+                 rd.to_i => :close)
+    assert_process_exit_ok pid
+
+    assert !rd.closed?
+    assert !wr.closed?
+  ensure
+    [rd, wr].each { |fd| fd.close rescue nil }
   end
 
   def test_extract_process_spawn_arguments_with_options

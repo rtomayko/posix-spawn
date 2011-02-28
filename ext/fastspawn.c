@@ -49,29 +49,36 @@ rb_fastspawn_vspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 static int
 fastspawn_file_actions_addclose_iter(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
-	int fd, res;
+	int fd;
 
 	/* we only care about { (FD|:in|:out|:err) => :close } */
 	if (SYM2ID(val) != rb_intern("close"))
 		return ST_CONTINUE;
 
-	res = ST_CONTINUE;
+	fd  = -1;
 	switch (TYPE(key)) {
+		case T_FIXNUM:
+			/* FD => :close */
+			fd = FIX2INT(key);
+			break;
+
 		case T_SYMBOL:
+			/* (:in|:out|:err) => :close */
 			if      (SYM2ID(key) == rb_intern("in"))   fd = 0;
 			else if (SYM2ID(key) == rb_intern("out"))  fd = 1;
 			else if (SYM2ID(key) == rb_intern("err"))  fd = 2;
-			else break;
-
-			posix_spawn_file_actions_addclose(fops, fd);
-			res = ST_DELETE;
 			break;
 
 		default:
 			break;
 	}
 
-	return ST_CONTINUE;
+	if (fd >= 0) {
+		posix_spawn_file_actions_addclose(fops, fd);
+		return ST_DELETE;
+	} else {
+		return ST_CONTINUE;
+	}
 }
 
 static void
