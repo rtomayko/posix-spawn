@@ -21,6 +21,9 @@ fastspawn_vspawn(int argc, VALUE *argv, VALUE self)
 		cargv[i] = StringValuePtr(argv[i]);
 
 	pid = vfork();
+	if(pid < 0) {
+		rb_sys_fail("vfork");
+	}
 	if(!pid) {
 		execvp(cargv[0], cargv);
 		_exit(1);
