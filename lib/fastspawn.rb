@@ -110,3 +110,4 @@ end
 
 # fastspawn extension methods replace ruby versions
 require 'fastspawn.so'
+require 'fastspawn/process'
