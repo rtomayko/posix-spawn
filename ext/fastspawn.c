@@ -10,10 +10,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <ruby.h>
-#include <st.h>
 
-#ifndef RUBY_VM
-#include "node.h"
+#ifdef RUBY_VM
+#include <ruby/st.h>
+#else
+#include <node.h>
+#include <st.h>
 #endif
 
 #ifndef RARRAY_LEN
