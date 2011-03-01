@@ -94,9 +94,10 @@ class FastSpawnTest < Test::Unit::TestCase
   end
 
   def test_pspawn_close_invalid_fd_raises_exception
-    assert_raise Errno::EBADF do
-      pspawn("echo", "hiya", 250 => :close)
-    end
+    pid = pspawn("echo", "hiya", 250 => :close)
+    assert_process_exit_status pid, 127
+  rescue Errno::EBADF
+    # this happens on darwin only. GNU does spawn and exits 127.
   end
 
   ##
@@ -125,9 +126,10 @@ class FastSpawnTest < Test::Unit::TestCase
   end
 
   def test_pspawn_redirect_invalid_fds_raises_exception
-    assert_raise Errno::EBADF do
-      pspawn("echo", "hiya", 250 => 3)
-    end
+    pid = pspawn("echo", "hiya", 250 => 3)
+    assert_process_exit_status pid, 127
+  rescue Errno::EBADF
+    # this happens on darwin only. GNU does spawn and exits 127.
   end
 
   def test_pspawn_closing_multiple_fds_with_array_keys
