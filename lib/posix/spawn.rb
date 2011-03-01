@@ -1,6 +1,6 @@
-require File.expand_path('../../posix_spawn_ext', __FILE__)
-require File.expand_path('../spawn/version', __FILE__)
-require File.expand_path('../spawn/process', __FILE__)
+require 'posix_spawn_ext'
+require 'posix/spawn/version'
+require 'posix/spawn/process'
 
 module POSIX
   module Spawn

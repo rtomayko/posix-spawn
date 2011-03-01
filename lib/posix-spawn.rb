@@ -1,1 +1,1 @@
-require File.expand_path("../posix/spawn", __FILE__)
+require "posix/spawn"
