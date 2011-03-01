@@ -1,0 +1,20 @@
+Nowish:
+
+[x] license (LGPL)
+[x] fucking name this thing
+[x] fastspawn-bm should take iterations and memsize arguments
+[x] high level Grit::Process like class (string based) (tmm1)
+[ ] add FD => '/path/to/file' (all variations) (rtomayko)
+[ ] raise exception on unhandled options
+[ ] POSIX::Spawn as ::Spawn?
+[ ] POSIX::Spawn#pspawn should be just #spawn
+[ ] benchmarks in README (tmm1)
+[ ] usage examples in README (spawn AND Process)
+
+Later:
+
+[ ] popen* interfaces
+[ ] system interface
+[ ] ` interface
+[ ] jruby Grit::Process stuff
+[ ] make vfork an option
