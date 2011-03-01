@@ -74,7 +74,7 @@ module FastSpawn
   #
   # Returns the modified options hash.
   def flatten_process_spawn_options!(options)
-    options.each do |key, value|
+    options.to_a.each do |key, value|
       if key.respond_to?(:to_ary)
         key.to_ary.each { |fd| options[fd] = value }
         options.delete(key)
