@@ -238,7 +238,7 @@ static VALUE
 rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
 	int i, ret;
-	int argc = RARRAY_LEN(argv);
+	long argc = RARRAY_LEN(argv);
 	char **envp = NULL;
 	char *cargv[argc + 1];
 	VALUE cmdname;
