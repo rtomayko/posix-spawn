@@ -35,7 +35,8 @@
 extern char **environ;
 #endif
 
-static VALUE rb_mFastSpawn;
+static VALUE rb_mPOSIX;
+static VALUE rb_mPOSIXSpawn;
 
 /* Determine the fd number for a Ruby object VALUE.
  *
@@ -49,7 +50,7 @@ static VALUE rb_mFastSpawn;
  * does not map to an fd.
  */
 static int
-fastspawn_obj_to_fd(VALUE obj)
+posixspawn_obj_to_fd(VALUE obj)
 {
 	int fd = -1;
 	switch (TYPE(obj)) {
@@ -90,7 +91,7 @@ fastspawn_obj_to_fd(VALUE obj)
  * no operation was performed.
  */
 static int
-fastspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+posixspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
 	int fd;
 
@@ -98,7 +99,7 @@ fastspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_t
 	if (TYPE(val) != T_SYMBOL || SYM2ID(val) != rb_intern("close"))
 		return ST_CONTINUE;
 
-	fd  = fastspawn_obj_to_fd(key);
+	fd  = posixspawn_obj_to_fd(key);
 	if (fd >= 0) {
 		posix_spawn_file_actions_addclose(fops, fd);
 		return ST_DELETE;
@@ -116,15 +117,15 @@ fastspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_t
  * no operation was performed.
  */
 static int
-fastspawn_file_actions_reopen(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+posixspawn_file_actions_reopen(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
 	int fd, newfd;
 
-	newfd = fastspawn_obj_to_fd(key);
+	newfd = posixspawn_obj_to_fd(key);
 	if (newfd < 0)
 		return ST_CONTINUE;
 
-	fd = fastspawn_obj_to_fd(val);
+	fd = posixspawn_obj_to_fd(val);
 	if (fd < 0)
 		return ST_CONTINUE;
 
@@ -142,14 +143,14 @@ fastspawn_file_actions_reopen(VALUE key, VALUE val, posix_spawn_file_actions_t *
  * if not.
  */
 static int
-fastspawn_file_actions_operations_iter(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+posixspawn_file_actions_operations_iter(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
 	int act;
 
-	act = fastspawn_file_actions_addclose(key, val, fops);
+	act = posixspawn_file_actions_addclose(key, val, fops);
 	if (act != ST_CONTINUE) return act;
 
-	act = fastspawn_file_actions_reopen(key, val, fops);
+	act = posixspawn_file_actions_reopen(key, val, fops);
 	if (act != ST_CONTINUE) return act;
 
 	return ST_CONTINUE;
@@ -163,10 +164,10 @@ fastspawn_file_actions_operations_iter(VALUE key, VALUE val, posix_spawn_file_ac
  * Returns nothing.
  */
 static void
-fastspawn_file_actions_init(posix_spawn_file_actions_t *fops, VALUE options)
+posixspawn_file_actions_init(posix_spawn_file_actions_t *fops, VALUE options)
 {
 	posix_spawn_file_actions_init(fops);
-	rb_hash_foreach(options, fastspawn_file_actions_operations_iter, (VALUE)fops);
+	rb_hash_foreach(options, posixspawn_file_actions_operations_iter, (VALUE)fops);
 }
 
 static int
@@ -228,7 +229,7 @@ each_env_i(VALUE key, VALUE val, VALUE arg)
 }
 
 /*
- * FastSpawn#_pspawn(env, argv, options)
+ * POSIX::Spawn#_pspawn(env, argv, options)
  *
  * env     - Hash of the new environment.
  * argv    - The [[cmdname, argv0], argv1, ...] exec array.
@@ -237,7 +238,7 @@ each_env_i(VALUE key, VALUE val, VALUE arg)
  * Returns the pid of the newly spawned process.
  */
 static VALUE
-rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
+rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
 	int i, ret;
 	long argc = RARRAY_LEN(argv);
@@ -285,7 +286,7 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
 	cargv[argc] = NULL;
 
-	fastspawn_file_actions_init(&fops, options);
+	posixspawn_file_actions_init(&fops, options);
 
 	posix_spawnattr_init(&attr);
 #if defined(POSIX_SPAWN_USEVFORK) || defined(__linux__)
@@ -323,10 +324,11 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 }
 
 void
-Init_fastspawn()
+Init_posix_spawn_ext()
 {
-	rb_mFastSpawn = rb_define_module("FastSpawn");
-	rb_define_method(rb_mFastSpawn, "_pspawn", rb_fastspawn_pspawn, 3);
+	rb_mPOSIX = rb_define_module("POSIX");
+	rb_mPOSIXSpawn = rb_define_module_under(rb_mPOSIX, "Spawn");
+	rb_define_method(rb_mPOSIXSpawn, "_pspawn", rb_posixspawn_pspawn, 3);
 }
 
 /* vim: set noexpandtab sts=0 ts=4 sw=4: */

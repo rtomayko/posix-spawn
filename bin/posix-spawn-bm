@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
-#/ Usage: fastspawn-bm [-n <count>] [-m <mem-size>]
-#/ Run fastspawn benchmarks and report to standard output.
+#/ Usage: posix-spawn-bm [-n <count>] [-m <mem-size>]
+#/ Run posix-spawn (Ruby extension) benchmarks and report to standard output.
 #/
 #/ Options:
 #/   -n, --count=NUM         total number of processes to spawn.
@@ -8,7 +8,7 @@
 #/
 #/ Benchmarks run with -n 1000 -m 100 by default.
 require 'optparse'
-require 'fastspawn'
+require 'posix-spawn'
 require 'benchmark'
 include Benchmark
 
@@ -32,13 +32,13 @@ bloat = 'x' * allocate
 bm 40 do |x|
   x.report("fspawn (fork/exec):") do
     iterations.times do
-      pid = FastSpawn.fspawn('true')
+      pid = POSIX::Spawn.fspawn('true')
       Process.wait(pid)
     end
   end
   x.report("pspawn (posix_spawn):") do
     iterations.times do
-      pid = FastSpawn.pspawn('true')
+      pid = POSIX::Spawn.pspawn('true')
       Process.wait(pid)
     end
   end
