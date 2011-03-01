@@ -1,19 +1,34 @@
 #!/usr/bin/env ruby
-# Usage: fastspawn-bm
+#/ Usage: fastspawn-bm [-n <count>] [-m <mem-size>]
+#/ Run fastspawn benchmarks and report to standard output.
+#/
+#/ Options:
+#/   -n, --count=NUM         total number of processes to spawn.
+#/   -m, --mem-size=MB       RES size to bloat to before performing benchmarks.
+#/
+#/ Benchmarks run with -n 1000 -m 100 by default.
+require 'optparse'
 require 'fastspawn'
 require 'benchmark'
+include Benchmark
 
 allocate   = 100 * (1024 ** 2)
 iterations = 1_000
+ARGV.options do |o|
+  o.set_summary_indent('  ')
+  o.on("-n", "--count=num")   { |val| iterations = val.to_i }
+  o.on("-m", "--mem-size=MB") { |val| allocate   = val.to_i * (1024 ** 2) }
+  o.on_tail("-h", "--help")   { exec "grep ^#/ <'#{__FILE__}' |cut -c4-" }
+  o.parse!
+end
 
-include Benchmark
+puts "benchmarking fork/exec vs. posix_spawn over #{iterations} runs" +
+     " at #{allocate / (1024 ** 2)}M res"
 
 # bloat the process
 bloat = 'x' * allocate
 
-# benchmark vspawn (vfork+exec) vs. fspawn (fork+exec)
-puts "benchmarking the various spawns over #{iterations} runs" +
-     " at #{allocate / (1024 ** 2)}M res"
+# run the benchmarks
 bm 40 do |x|
   x.report("fspawn (fork/exec):") do
     iterations.times do
