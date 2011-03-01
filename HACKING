@@ -1,7 +1,7 @@
 Clone the project:
 
-   git clone http://github.com/rtomayko/fastspawn.git
-   cd fastspawn
+   git clone http://github.com/rtomayko/posix-spawn.git
+   cd posix-spawn
    bundle install
 
 Rake tasks can be run without further setup:
