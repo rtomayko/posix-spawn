@@ -21,12 +21,6 @@ bm 40 do |x|
       Process.wait(pid)
     end
   end
-  x.report("vspawn (vfork/exec):") do
-    iterations.times do
-      pid = FastSpawn.vspawn('true')
-      Process.wait(pid)
-    end
-  end
   x.report("pspawn (posix_spawn):") do
     iterations.times do
       pid = FastSpawn.pspawn('true')
