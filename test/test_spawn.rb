@@ -1,12 +1,12 @@
 require 'test/unit'
-require 'fastspawn'
+require 'posix-spawn'
 
-class FastSpawnTest < Test::Unit::TestCase
-  include FastSpawn
+class SpawnTest < Test::Unit::TestCase
+  include POSIX::Spawn
 
-  def test_fastspawn_methods_exposed_at_module_level
-    assert FastSpawn.respond_to?(:pspawn)
-    assert FastSpawn.respond_to?(:_pspawn)
+  def test_spawn_methods_exposed_at_module_level
+    assert POSIX::Spawn.respond_to?(:pspawn)
+    assert POSIX::Spawn.respond_to?(:_pspawn)
   end
 
   def test_fspawn

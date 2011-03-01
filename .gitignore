@@ -1,7 +1,5 @@
-/ext/Makefile
-/ext/fastspawn.bundle
-/ext/fastspawn.o
-/ext/fastspawn.so
-/ext/ruby-*
-/lib/fastspawn.bundle
-/lib/fastspawn.so
+Gemfile.lock
+ext/Makefile
+lib/posix_spawn_ext.*
+tmp
+pkg

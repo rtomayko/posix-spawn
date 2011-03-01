@@ -2,6 +2,7 @@ Clone the project:
 
    git clone http://github.com/rtomayko/fastspawn.git
    cd fastspawn
+   bundle install
 
 Rake tasks can be run without further setup:
 

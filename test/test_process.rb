@@ -1,8 +1,8 @@
 require 'test/unit'
-require 'fastspawn'
+require 'posix-spawn'
 
-class FastSpawnProcessTest < Test::Unit::TestCase
-  include FastSpawn
+class ProcessTest < Test::Unit::TestCase
+  include POSIX::Spawn
 
   def test_argv_array_execs
     p = Process.new(['printf', '%s %s %s', '1', '2', '3 4'])

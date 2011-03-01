@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
-# Usage: fastspawn-bm
-require 'fastspawn'
+# Usage: posix-spawn-bm
+require 'posix-spawn'
 require 'benchmark'
 
 allocate   = 100 * (1024 ** 2)
@@ -17,13 +17,13 @@ puts "benchmarking the various spawns over #{iterations} runs" +
 bm 40 do |x|
   x.report("fspawn (fork/exec):") do
     iterations.times do
-      pid = FastSpawn.fspawn('true')
+      pid = POSIX::Spawn.fspawn('true')
       Process.wait(pid)
     end
   end
   x.report("pspawn (posix_spawn):") do
     iterations.times do
-      pid = FastSpawn.pspawn('true')
+      pid = POSIX::Spawn.pspawn('true')
       Process.wait(pid)
     end
   end
