@@ -286,7 +286,10 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	fastspawn_file_actions_init(&fops, options);
 
 	posix_spawnattr_init(&attr);
-#ifdef POSIX_SPAWN_USEVFORK
+#if defined(POSIX_SPAWN_USEVFORK) || defined(__linux__)
+	/* Force USEVFORK on linux. If this is undefined, it's probably because
+	 * you forgot to define _GNU_SOURCE at the top of this file.
+	 */
 	posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
 #endif
 
