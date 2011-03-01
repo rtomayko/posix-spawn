@@ -22,7 +22,9 @@ These options to Process::spawn are currently supported:
     name => val : set the environment variable
     name => nil : unset the environment variable
   command...:
+    commandline                 : command line string which is passed to a shell
     cmdname, arg1, ...          : command name and one or more arguments (no shell)
+    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
   options: hash
     redirection:
       key:
@@ -40,9 +42,6 @@ These options to Process::spawn are currently supported:
 
 These options are NOT currently supported:
 
-  command...:
-    commandline                 : command line string which is passed to a shell
-    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
   options: hash
     clearing environment variables:
       :unsetenv_others => true   : clear environment variables except specified by env

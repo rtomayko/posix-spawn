@@ -227,6 +227,12 @@ each_env_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  * FastSpawn#_pspawn(env, argv, options)
+ *
+ * env     - Hash of the new environment.
+ * argv    - The [[cmdname, argv0], argv1, ...] exec array.
+ * options - The options hash with fd redirect and close operations.
+ *
+ * Returns the pid of the newly spawned process.
  */
 static VALUE
 rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
@@ -235,6 +241,8 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	int argc = RARRAY_LEN(argv);
 	char **envp = NULL;
 	char *cargv[argc + 1];
+	VALUE cmdname;
+	char *file;
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
 	posix_spawnattr_t attr;
@@ -265,9 +273,13 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 		}
 	}
 
-	cargv[argc] = NULL;
-	for (i = 0; i < argc; i++)
+	/* argv is a [[cmdname, argv0], argv1, argvN, ...] array. */
+	cmdname = RARRAY_PTR(argv)[0];
+	file = StringValuePtr(RARRAY_PTR(cmdname)[0]);
+	cargv[0] = StringValuePtr(RARRAY_PTR(cmdname)[1]);
+	for (i = 1; i < argc; i++)
 		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
+	cargv[argc] = NULL;
 
 	fastspawn_file_actions_init(&fops, options);
 
@@ -276,7 +288,7 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
 #endif
 
-	ret = posix_spawnp(&pid, cargv[0], &fops, &attr, cargv, envp ? envp : environ);
+	ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
 
 	posix_spawn_file_actions_destroy(&fops);
 	posix_spawnattr_destroy(&attr);

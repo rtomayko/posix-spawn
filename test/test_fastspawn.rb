@@ -19,6 +19,16 @@ class FastSpawnTest < Test::Unit::TestCase
     assert_process_exit_ok pid
   end
 
+  def test_pspawn_with_shell
+    pid = pspawn('true && exit 13')
+    assert_process_exit_status pid, 13
+  end
+
+  def test_pspawn_with_cmdname_and_argv0_tuple
+    pid = pspawn(['true', 'not-true'], 'some', 'args', 'toooo')
+    assert_process_exit_ok pid
+  end
+
   ##
   # Environ
 
@@ -133,19 +143,25 @@ class FastSpawnTest < Test::Unit::TestCase
   # Options Preprocessing
 
   def test_extract_process_spawn_arguments_with_options
-    assert_equal [{}, ['echo', 'hello', 'world'], {:err => :close}],
+    assert_equal [{}, [['echo', 'echo'], 'hello', 'world'], {:err => :close}],
       extract_process_spawn_arguments('echo', 'hello', 'world', :err => :close)
-    assert_equal [{}, ['echo', 'hello', 'world'], {:err => :close}],
-      extract_process_spawn_arguments(['echo', 'hello', 'world'], :err => :close)
   end
 
   def test_extract_process_spawn_arguments_with_options_and_env
     options = {:err => :close}
     env = {'X' => 'Y'}
-    assert_equal [env, ['echo', 'hello world'], options],
+    assert_equal [env, [['echo', 'echo'], 'hello world'], options],
       extract_process_spawn_arguments(env, 'echo', 'hello world', options)
-    assert_equal [env, ['echo', 'hello world'], options],
-      extract_process_spawn_arguments(env, ['echo', 'hello world'], options)
+  end
+
+  def test_extract_process_spawn_arguments_with_shell_command
+    assert_equal [{}, [['/bin/sh', '/bin/sh'], '-c', 'echo hello world'], {}],
+      extract_process_spawn_arguments('echo hello world')
+  end
+
+  def test_extract_process_spawn_arguments_with_special_cmdname_argv_tuple
+    assert_equal [{}, [['echo', 'fuuu'], 'hello world'], {}],
+      extract_process_spawn_arguments(['echo', 'fuuu'], 'hello world')
   end
 
   ##

@@ -48,8 +48,10 @@ module FastSpawn
       else
         {}
       end
+    flatten_process_spawn_options!(options)
 
-    # shift the environ hash off the front if it's there
+    # shift the environ hash off the front if it's there and account for
+    # possible :env key in options hash.
     env =
       if args[0].respond_to?(:to_hash)
         args.shift.to_hash
@@ -58,16 +60,9 @@ module FastSpawn
       end
     env.merge!(options.delete(:env)) if options.key?(:env)
 
-    # remaining arguments are the argv. it's possible for this to be an single
-    # element array so pull it out if so.
-    argv =
-      if args.size == 1 && args[0].respond_to?(:to_ary)
-        args[0]
-      else
-        args
-      end
+    # remaining arguments are the argv supporting a number of variations.
+    argv = adjust_process_spawn_argv(args)
 
-    flatten_process_spawn_options!(options)
     [env, argv, options]
   end
 
@@ -84,6 +79,31 @@ module FastSpawn
         key.to_ary.each { |fd| options[fd] = value }
         options.delete(key)
       end
+    end
+  end
+
+  # Converts the various supported command argument variations into a
+  # standard argv suitable for use with exec. This includes detecting commands
+  # to be run through the shell (single argument strings with spaces).
+  #
+  # The args array may follow any of these variations:
+  #
+  # 'true'                     => [['true', 'true']]
+  # 'echo', 'hello', 'world'   => [['echo', 'echo'], 'hello', 'world']
+  # 'echo hello world'         => [['/bin/sh', '/bin/sh'], '-c', 'echo hello world']
+  # ['echo', 'fuuu'], 'hello'  => [['echo', 'fuuu'], 'hello']
+  #
+  # Returns a [[cmdname, argv0], argv1, ...] array.
+  def adjust_process_spawn_argv(args)
+    if args.size == 1 && args[0] =~ /[ |>]/
+      # single string with these characters means run it through the shell
+      [['/bin/sh', '/bin/sh'], '-c', args[0]]
+    elsif !args[0].respond_to?(:to_ary)
+      # [argv0, argv1, ...]
+      [[args[0], args[0]], *args[1..-1]]
+    else
+      # [[cmdname, argv0], argv1, ...]
+      args
     end
   end
 end
