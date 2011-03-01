@@ -243,8 +243,10 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	long argc = RARRAY_LEN(argv);
 	char **envp = NULL;
 	char *cargv[argc + 1];
+	VALUE dirname;
 	VALUE cmdname;
 	char *file;
+	char *cwd = NULL;
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
 	posix_spawnattr_t attr;
@@ -293,7 +295,16 @@ rb_fastspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
 #endif
 
+	if (RTEST(dirname = rb_hash_aref(options, ID2SYM(rb_intern("chdir"))))) {
+		char *new_cwd = StringValuePtr(dirname);
+		cwd = getcwd(NULL, 0);
+		chdir(new_cwd);
+	}
 	ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
+	if (cwd) {
+		chdir(cwd);
+		free(cwd);
+	}
 
 	posix_spawn_file_actions_destroy(&fops);
 	posix_spawnattr_destroy(&attr);
