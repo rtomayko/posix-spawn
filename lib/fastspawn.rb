@@ -1,5 +1,5 @@
 module FastSpawn
-  VERSION = '0.1'
+  VERSION = '0.2.0'
   extend self
 
   # fail fast when extension methods already defined due to twice-loading

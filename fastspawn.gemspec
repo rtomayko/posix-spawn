@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'fastspawn'
-  s.version = '0.1'
+  s.version = '0.2.0'
   s.summary = "Fast process spawner"
   s.date = '2011-02-28'
   s.email = 'r@tomayko.com'
@@ -18,7 +18,9 @@ Gem::Specification.new do |s|
     ext/fastspawn.c
     fastspawn.gemspec
     lib/fastspawn.rb
+    lib/fastspawn/process.rb
     test/test_fastspawn.rb
+    test/test_fastspawn_process.rb
   ]
   # = MANIFEST =
   s.test_files = []
