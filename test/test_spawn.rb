@@ -56,6 +56,15 @@ module SpawnImplementationTests
     assert_process_exit_status pid, 1
   end
 
+  def test_spawn_close_on_standard_stream_io_object
+    pid = _spawn('exec 2>/dev/null 100<&0 || exit 1', STDIN => :close)
+    assert_process_exit_status pid, 1
+
+    pid = _spawn('exec 2>/dev/null 101>&1 102>&2 || exit 1',
+                 STDOUT => :close, STDOUT => :close)
+    assert_process_exit_status pid, 1
+  end
+
   def test_spawn_close_option_with_fd_number
     rd, wr = IO.pipe
     pid = _spawn("exec 2>/dev/null 100<&#{rd.to_i} || exit 1", rd.to_i => :close)
