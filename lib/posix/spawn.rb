@@ -106,6 +106,8 @@ module POSIX
     # Returns the modified options hash.
     def normalize_process_spawn_redirect_file_options!(options)
       options.to_a.each do |key, value|
+        next if !fd?(key)
+
         # convert string and short array values to
         if value.respond_to?(:to_str)
           value = default_file_reopen_info(key, value)
@@ -144,6 +146,21 @@ module POSIX
         [file, "w", 0644]
       else
         [file, "r", 0644]
+      end
+    end
+
+    # Determine whether object is fd-like.
+    #
+    # Returns true if object is an instance of IO, Fixnum >= 0, or one of the
+    # the symbolic names :in, :out, or :err.
+    def fd?(object)
+      case object
+      when Fixnum
+        object >= 0
+      when :in, :out, :err, STDIN, STDOUT, STDERR, $stdin, $stdout, $stderr, IO
+        true
+      else
+        object.respond_to?(:to_io) && !object.to_io.nil?
       end
     end
 
