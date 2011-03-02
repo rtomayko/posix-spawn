@@ -47,6 +47,14 @@ module SpawnImplementationTests
   ##
   # FD => :close options
 
+  def test_sanity_of_checking_clone_with_sh
+    rd, wr = IO.pipe
+    pid = _spawn("exec 2>/dev/null 100<&#{rd.to_i} || exit 1", rd => rd)
+    assert_process_exit_status pid, 0
+  ensure
+    [rd, wr].each { |fd| fd.close rescue nil }
+  end
+
   def test_spawn_close_option_with_symbolic_standard_stream_names
     pid = _spawn('exec 2>/dev/null 100<&0 || exit 1', :in => :close)
     assert_process_exit_status pid, 1
