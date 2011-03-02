@@ -5,6 +5,7 @@
 #/ Options:
 #/   -n, --count=NUM         total number of processes to spawn.
 #/   -m, --mem-size=MB       RES size to bloat to before performing benchmarks.
+#/   -g, --graph             benchmark at 10MB itervals up to RES and graph results.
 #/
 #/ Benchmarks run with -n 1000 -m 100 by default.
 require 'optparse'
@@ -14,12 +15,63 @@ include Benchmark
 
 allocate   = 100 * (1024 ** 2)
 iterations = 1_000
+graphmode  = false
 ARGV.options do |o|
   o.set_summary_indent('  ')
   o.on("-n", "--count=num")   { |val| iterations = val.to_i }
   o.on("-m", "--mem-size=MB") { |val| allocate   = val.to_i * (1024 ** 2) }
+  o.on("-g", "--graph")       { graphmode = true }
   o.on_tail("-h", "--help")   { exec "grep ^#/ <'#{__FILE__}' |cut -c4-" }
   o.parse!
+end
+
+if graphmode
+  bloat = []
+  data  = {}
+  chunk = allocate / 10
+  max   = 0
+
+  10.times do
+    puts "allocating #{chunk / (1024 ** 2)}MB (#{(bloat.size+1) * chunk / (1024 ** 2)}MB total)"
+    bloat << ('x' * chunk)
+    # size = bloat.size / (1024 ** 2)
+
+    %w[ fspawn pspawn ].each do |type|
+      print " - benchmarking #{type}... "
+      time = Benchmark.realtime do
+        iterations.times do
+          pid = POSIX::Spawn.send(type, 'true')
+          Process.wait(pid)
+        end
+      end
+      puts "done (#{time})"
+
+      data[type] ||= []
+      data[type] << time
+      max = time if time > max
+    end
+  end
+
+  max = max.ceil
+  minmb, maxmb = chunk/(1024**2), allocate/(1024**2)
+
+  url  = "https://chart.googleapis.com/chart?"
+  url += "chs=600x200&"
+  url += "chf=bg,s,f8f8f8&"
+  url += "chco=ff0000,00ff00&"
+  url += "chdl=fspawn (fork%2Bexec)|pspawn (posix_spawn)&"
+  url += "chxt=x,x,y,y&"
+  url += "chxr=0,#{minmb},#{maxmb},#{minmb}|2,0,#{max},#{max/5}&"
+  url += "chxp=1,50|3,50&"
+  url += "chxl=1:|MB%20RSS|3:|Seconds&"
+  url += "cht=lc&"
+  url += "chds=0,#{max*1.25}&"
+  url += "chd=t:#{data['fspawn'].join(',')}|#{data['pspawn'].join(',')}&"
+  url += "chtt=posix-spawn-bm -g -n #{iterations} -m #{maxmb} (#{RUBY_PLATFORM})"
+
+  puts url.gsub(' ', '%20')
+
+  exit!
 end
 
 puts "benchmarking fork/exec vs. posix_spawn over #{iterations} runs" +
