@@ -26,55 +26,55 @@ http://www.ruby-doc.org/core-1.9/classes/Process.html#M002230
 
 These Process::spawn arguments are currently supported:
 
-  env: hash
-    name => val : set the environment variable
-    name => nil : unset the environment variable
-  command...:
-    commandline                 : command line string which is passed to a shell
-    cmdname, arg1, ...          : command name and one or more arguments (no shell)
-    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
-  options: hash
-    redirection:
-      key:
-        FD              : single file descriptor in child process
-        [FD, FD, ...]   : multiple file descriptor in child process
-      value:
-        FD                        : redirect to the file descriptor in parent process
-        :close                    : close the file descriptor in child process
-        string                    : redirect to file with open(string, "r" or "w")
-        [string]                  : redirect to file with open(string, File::RDONLY)
-        [string, open_mode]       : redirect to file with open(string, open_mode, 0644)
-        [string, open_mode, perm] : redirect to file with open(string, open_mode, perm)
-      FD is one of follows
-        :in     : the file descriptor 0 which is the standard input
-        :out    : the file descriptor 1 which is the standard output
-        :err    : the file descriptor 2 which is the standard error
-        integer : the file descriptor of specified the integer
-        io      : the file descriptor specified as io.fileno
-    current directory:
-      :chdir => str
+    env: hash
+      name => val : set the environment variable
+      name => nil : unset the environment variable
+    command...:
+      commandline                 : command line string which is passed to a shell
+      cmdname, arg1, ...          : command name and one or more arguments (no shell)
+      [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
+    options: hash
+      redirection:
+        key:
+          FD              : single file descriptor in child process
+          [FD, FD, ...]   : multiple file descriptor in child process
+        value:
+          FD                        : redirect to the file descriptor in parent process
+          :close                    : close the file descriptor in child process
+          string                    : redirect to file with open(string, "r" or "w")
+          [string]                  : redirect to file with open(string, File::RDONLY)
+          [string, open_mode]       : redirect to file with open(string, open_mode, 0644)
+          [string, open_mode, perm] : redirect to file with open(string, open_mode, perm)
+        FD is one of follows
+          :in     : the file descriptor 0 which is the standard input
+          :out    : the file descriptor 1 which is the standard output
+          :err    : the file descriptor 2 which is the standard error
+          integer : the file descriptor of specified the integer
+          io      : the file descriptor specified as io.fileno
+      current directory:
+        :chdir => str
 
 These are NOT currently supported:
 
-  options: hash
-    clearing environment variables:
-      :unsetenv_others => true   : clear environment variables except specified by env
-      :unsetenv_others => false  : don't clear (default)
-    process group:
-      :pgroup => true or 0 : make a new process group
-      :pgroup => pgid      : join to specified process group
-      :pgroup => nil       : don't change the process group (default)
-    resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
-      :rlimit_resourcename => limit
-      :rlimit_resourcename => [cur_limit, max_limit]
-    umask:
-      :umask => int
-    redirection:
-      value:
-        [:child, FD]              : redirect to the redirected file descriptor
-    file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
-      :close_others => false : inherit fds (default for system and exec)
-      :close_others => true  : don't inherit (default for spawn and IO.popen)
+    options: hash
+      clearing environment variables:
+        :unsetenv_others => true   : clear environment variables except specified by env
+        :unsetenv_others => false  : don't clear (default)
+      process group:
+        :pgroup => true or 0 : make a new process group
+        :pgroup => pgid      : join to specified process group
+        :pgroup => nil       : don't change the process group (default)
+      resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
+        :rlimit_resourcename => limit
+        :rlimit_resourcename => [cur_limit, max_limit]
+      umask:
+        :umask => int
+      redirection:
+        value:
+          [:child, FD]              : redirect to the redirected file descriptor
+      file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
+        :close_others => false : inherit fds (default for system and exec)
+        :close_others => true  : don't inherit (default for spawn and IO.popen)
 
 ## ACKNOWLEDGEMENTS
 
