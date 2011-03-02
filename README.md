@@ -208,6 +208,6 @@ These are currently NOT supported:
 
 ## ACKNOWLEDGEMENTS
 
-Copyright (C) by Ryan Tomayko <r@tomayko.com> and Aman Gupta <aman@tmm1.net>.
+Copyright (C) by [Ryan Tomayko](http://tomayko.com/about) and [Aman Gupta](https://github.com/tmm1).
 
 See the COPYING file for more information on license and redistribution.
