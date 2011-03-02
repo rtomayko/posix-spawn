@@ -224,6 +224,15 @@ class SpawnTest < Test::Unit::TestCase
   end
 
   ##
+  # Exceptions
+
+  def test_pspawn_raises_exception_on_unsupported_options
+    assert_raise ArgumentError do
+      pspawn('echo howdy', :out => '/dev/null', :oops => 'blaahh')
+    end
+  end
+
+  ##
   # Options Preprocessing
 
   def test_extract_process_spawn_arguments_with_options

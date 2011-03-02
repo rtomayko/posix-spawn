@@ -332,15 +332,20 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
 #endif
 
-	if (RTEST(dirname = rb_hash_aref(options, ID2SYM(rb_intern("chdir"))))) {
+	if (RTEST(dirname = rb_hash_delete(options, ID2SYM(rb_intern("chdir"))))) {
 		char *new_cwd = StringValuePtr(dirname);
 		cwd = getcwd(NULL, 0);
 		chdir(new_cwd);
 	}
-	ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
-	if (cwd) {
-		chdir(cwd);
-		free(cwd);
+
+	if (RHASH_SIZE(options) == 0) {
+		ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
+		if (cwd) {
+			chdir(cwd);
+			free(cwd);
+		}
+	} else {
+		ret = -1;
 	}
 
 	posix_spawn_file_actions_destroy(&fops);
@@ -349,6 +354,12 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 		char **ep = envp;
 		while (*ep != NULL) free(*ep), ++ep;
 		free(envp);
+	}
+
+	if (RHASH_SIZE(options) > 0) {
+		/* TODO include options.keys.first name in error message */
+		rb_raise(rb_eArgError, "Invalid options");
+		return -1;
 	}
 
 	if (ret != 0) {
