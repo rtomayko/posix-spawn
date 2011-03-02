@@ -23,12 +23,11 @@ module POSIX
 
     # Spawn a child process using posix_spawn.
     #
-    # argv - Array of command line arguments passed to exec.
-    #
     # Returns the pid of the newly spawned process.
     # Raises NotImplemented when pfork is not supported on the current platform.
     def pspawn(*argv)
       env, argv, options = extract_process_spawn_arguments(*argv)
+      raise NotImplementedError unless respond_to?(:_pspawn)
       _pspawn(env, argv, options)
     end
 
