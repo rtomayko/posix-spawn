@@ -22,7 +22,7 @@ module SpawnImplementationTests
 
   def test_spawn_inherit_env
     ENV['PSPAWN'] = 'parent'
-    pid = _spawn('/bin/sh', '-c', 'test "$PSPAWN" = "parent"')
+    pid = _spawn('test "$PSPAWN" = "parent"')
     assert_process_exit_ok pid
   ensure
     ENV.delete('PSPAWN')
@@ -30,7 +30,7 @@ module SpawnImplementationTests
 
   def test_spawn_set_env
     ENV['PSPAWN'] = 'parent'
-    pid = _spawn({'PSPAWN'=>'child'}, '/bin/sh', '-c', 'test "$PSPAWN" = "child"')
+    pid = _spawn({'PSPAWN'=>'child'}, 'test "$PSPAWN" = "child"')
     assert_process_exit_ok pid
   ensure
     ENV.delete('PSPAWN')
@@ -38,7 +38,7 @@ module SpawnImplementationTests
 
   def test_spawn_unset_env
     ENV['PSPAWN'] = 'parent'
-    pid = _spawn({'PSPAWN'=>nil}, '/bin/sh', '-c', 'test -z "$PSPAWN"')
+    pid = _spawn({'PSPAWN'=>nil}, 'test -z "$PSPAWN"')
     assert_process_exit_ok pid
   ensure
     ENV.delete('PSPAWN')
@@ -48,19 +48,17 @@ module SpawnImplementationTests
   # FD => :close options
 
   def test_spawn_close_option_with_symbolic_standard_stream_names
-    pid = _spawn('/bin/sh', '-c', 'exec 2>/dev/null 100<&0 || exit 1',
-                 :in => :close)
+    pid = _spawn('exec 2>/dev/null 100<&0 || exit 1', :in => :close)
     assert_process_exit_status pid, 1
 
-    pid = _spawn('/bin/sh', '-c', 'exec 2>/dev/null 101>&1 102>&2 || exit 1',
+    pid = _spawn('exec 2>/dev/null 101>&1 102>&2 || exit 1',
                  :out => :close, :err => :close)
     assert_process_exit_status pid, 1
   end
 
   def test_spawn_close_option_with_fd_number
     rd, wr = IO.pipe
-    pid = _spawn('/bin/sh', '-c', "exec 2>/dev/null 100<&#{rd.to_i} || exit 1",
-                 rd.to_i => :close)
+    pid = _spawn("exec 2>/dev/null 100<&#{rd.to_i} || exit 1", rd.to_i => :close)
     assert_process_exit_status pid, 1
 
     assert !rd.closed?
@@ -71,8 +69,7 @@ module SpawnImplementationTests
 
   def test_spawn_close_option_with_io_object
     rd, wr = IO.pipe
-    pid = _spawn('/bin/sh', '-c', "exec 2>/dev/null 100<&#{rd.to_i} || exit 1",
-                 rd => :close)
+    pid = _spawn("exec 2>/dev/null 100<&#{rd.to_i} || exit 1", rd => :close)
     assert_process_exit_status pid, 1
 
     assert !rd.closed?
@@ -90,8 +87,7 @@ module SpawnImplementationTests
 
   def test_spawn_closing_multiple_fds_with_array_keys
     rd, wr = IO.pipe
-    pid = _spawn('/bin/sh', '-c', "exec 2>/dev/null 101>&#{wr.to_i} || exit 1",
-                 [rd, wr, :out] => :close)
+    pid = _spawn("exec 2>/dev/null 101>&#{wr.to_i} || exit 1", [rd, wr, :out] => :close)
     assert_process_exit_status pid, 1
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
