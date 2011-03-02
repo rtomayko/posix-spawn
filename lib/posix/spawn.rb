@@ -36,8 +36,38 @@ module POSIX
     # Returns the pid of the newly spawned process.
     def fspawn(*argv)
       env, argv, options = extract_process_spawn_arguments(*argv)
+      raise ArgumentError, "Invalid options" if options.find{ |key,val| !fd?(key) && ![:chdir].include?(key) }
+
       fork do
-        exec(*argv)
+        begin
+          # handle io redirection options
+          options.map do |key, val|
+            if fd?(key)
+              key = fd_to_io(key)
+
+              if fd?(val)
+                val = fd_to_io(val)
+                key.reopen(val)
+              elsif val == :close
+                key.close
+              elsif val.is_a?(Array)
+                file, mode_string, perms = *val
+                key.reopen(File.open(file, mode_string, perms))
+              end
+            end
+          end
+        rescue
+          exit!(127)
+        end
+
+        # setup child environment
+        env.each { |k, v| ENV[k] = v }
+
+        # { :chdir => '/' } in options means change into that dir
+        ::Dir.chdir(options[:chdir]) if options[:chdir]
+
+        # do the deed
+        ::Kernel::exec(*argv)
         exit! 1
       end
     end
@@ -175,6 +205,26 @@ module POSIX
         true
       else
         object.respond_to?(:to_io) && !object.to_io.nil?
+      end
+    end
+
+    # Convert a fd identifier to an IO object.
+    #
+    # Returns nil or an instance of IO.
+    def fd_to_io(object)
+      case object
+      when Fixnum
+        object >= 0 ? IO.for_fd(object) : nil
+      when :in, STDIN, $stdin
+        object == :in ? STDIN : object
+      when :out, STDOUT, $stdout
+        object == :out ? STDOUT : object
+      when :err, STDERR, $stderr
+        object == :err ? STDERR : object
+      when IO
+        object
+      else
+        object.respond_to?(:to_io) ? object.to_io : nil
       end
     end
 
