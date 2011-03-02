@@ -5,8 +5,10 @@
 [x] add FD => '/path/to/file' (all variations) (rtomayko)
 [x] raise exception on unhandled options
 [x] benchmarks in README (tmm1)
+[x] POSIX::Spawn::spawn usage examples in README
 [ ] POSIX::Spawn#pspawn should be just #spawn
-[ ] usage examples in README (spawn AND Process)
+[ ] POSIX::Spawn::Process usage examples in README
+[ ] :err => :out case -- currently closing out after dup2'ing
 
 [ ] popen* interfaces
 [ ] system interface
