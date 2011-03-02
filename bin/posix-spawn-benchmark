@@ -59,7 +59,7 @@ if graphmode
   chart = {
     :chs  => '900x200',
     :cht  => 'bvg', # grouped vertical bar chart
-    :chtt => "posix-spawn-benchmark -g -n #{iterations} -m #{maxmb} (#{RUBY_PLATFORM})",
+    :chtt => "posix-spawn-benchmark --graph --count #{iterations} --mem-size #{maxmb} (#{RUBY_PLATFORM})",
 
     :chf  => 'bg,s,f8f8f8', # background
     :chbh => 'a,5,25', # 25px between bar groups
