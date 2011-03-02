@@ -4,6 +4,10 @@ require 'posix-spawn'
 class ProcessTest < Test::Unit::TestCase
   include POSIX::Spawn
 
+  def test_sanity
+    assert_same POSIX::Spawn::Process, Process
+  end
+
   def test_argv_array_execs
     p = Process.new(['printf', '%s %s %s', '1', '2', '3 4'])
     assert p.success?

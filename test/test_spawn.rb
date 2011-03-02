@@ -314,11 +314,11 @@ class ForkSpawnTest < Test::Unit::TestCase
   end
 end
 
-if Process::respond_to?(:spawn)
+if ::Process::respond_to?(:spawn)
   class NativeSpawnTest < Test::Unit::TestCase
     include SpawnImplementationTests
     def _spawn(*argv)
-      Process.spawn(*argv)
+      ::Process.spawn(*argv)
     end
   end
 end

@@ -15,7 +15,7 @@ module POSIX
       if respond_to?(:_pspawn)
         pspawn(*argv)
       elsif ::Process.respond_to?(:spawn)
-        Process::spawn(*argv)
+        ::Process::spawn(*argv)
       else
         fspawn(*argv)
       end
