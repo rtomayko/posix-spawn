@@ -69,7 +69,7 @@ if graphmode
   url += "chd=t:#{data['fspawn'].join(',')}|#{data['pspawn'].join(',')}&"
   url += "chtt=posix-spawn-bm -g -n #{iterations} -m #{maxmb} (#{RUBY_PLATFORM})"
 
-  puts url.gsub(' ', '%20')
+  puts url.gsub(' ', '%20').gsub('(', '%28').gsub(')', '%29')
 
   exit!
 end
