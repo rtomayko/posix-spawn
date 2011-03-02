@@ -105,8 +105,8 @@ module SpawnImplementationTests
     pid = _spawn("echo", "hello world", :out => wr, rd => :close)
     wr.close
     output = rd.read
-    assert_equal "hello world\n", output
     assert_process_exit_ok pid
+    assert_equal "hello world\n", output
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
   end
@@ -116,8 +116,8 @@ module SpawnImplementationTests
     pid = _spawn("echo", "hello world", 1 => wr.fileno, rd.fileno => :close)
     wr.close
     output = rd.read
-    assert_equal "hello world\n", output
     assert_process_exit_ok pid
+    assert_equal "hello world\n", output
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
   end
