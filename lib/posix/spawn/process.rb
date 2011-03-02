@@ -39,6 +39,8 @@ module POSIX
     #   implement correctly and must be accounted for with either popen3 or
     #   hand rolled fork/exec code.
     class Process
+      include POSIX::Spawn
+
       # Create and execute a new process.
       #
       # argv    - Array of [command, arg1, ...] strings to use as the new
@@ -226,7 +228,7 @@ module POSIX
             :out => owr,          ord  => :close,
             :err => ewr,          erd  => :close
           )
-        pid = POSIX::Spawn.pspawn(*(argv + [opts]))
+        pid = spawn(*(argv + [opts]))
 
         [pid, iwr, ord, erd]
       ensure
