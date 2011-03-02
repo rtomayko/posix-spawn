@@ -213,14 +213,16 @@ module POSIX
     # Returns nil or an instance of IO.
     def fd_to_io(object)
       case object
+      when STDIN, STDOUT, STDERR, $stdin, $stdout, $stderr
+        object
+      when :in, 0
+        STDIN
+      when :out, 1
+        STDOUT
+      when :err, 2
+        STDERR
       when Fixnum
         object >= 0 ? IO.for_fd(object) : nil
-      when :in, STDIN, $stdin
-        object == :in ? STDIN : object
-      when :out, STDOUT, $stdout
-        object == :out ? STDOUT : object
-      when :err, STDERR, $stderr
-        object == :err ? STDERR : object
       when IO
         object
       else
