@@ -142,6 +142,88 @@ class SpawnTest < Test::Unit::TestCase
   end
 
   ##
+  # FD => file options
+
+  def test_pspawn_redirect_fd_to_file_with_symbolic_name
+    file = File.expand_path('../test-output', __FILE__)
+    text = 'redirect_fd_to_file_with_symbolic_name'
+    pid = pspawn('echo', text, :out => file)
+    assert_process_exit_ok pid
+    assert File.exist?(file)
+    assert_equal "#{text}\n", File.read(file)
+  ensure
+    File.unlink(file) rescue nil
+  end
+
+  def test_pspawn_redirect_fd_to_file_with_fd_number
+    file = File.expand_path('../test-output', __FILE__)
+    text = 'redirect_fd_to_file_with_fd_number'
+    pid = pspawn('echo', text, 1 => file)
+    assert_process_exit_ok pid
+    assert File.exist?(file)
+    assert_equal "#{text}\n", File.read(file)
+  ensure
+    File.unlink(file) rescue nil
+  end
+
+  def test_pspawn_redirect_fd_to_file_with_io_object
+    file = File.expand_path('../test-output', __FILE__)
+    text = 'redirect_fd_to_file_with_io_object'
+    pid = pspawn('echo', text, STDOUT => file)
+    assert_process_exit_ok pid
+    assert File.exist?(file)
+    assert_equal "#{text}\n", File.read(file)
+  ensure
+    File.unlink(file) rescue nil
+  end
+
+  def test_pspawn_redirect_fd_from_file_with_symbolic_name
+    file = File.expand_path('../test-input', __FILE__)
+    text = 'redirect_fd_from_file_with_symbolic_name'
+    File.open(file, 'w') { |fd| fd.write(text) }
+
+    pid = pspawn(%Q{test "$(cat)" = "#{text}"}, :in => file)
+    assert_process_exit_ok pid
+  ensure
+    File.unlink(file) rescue nil
+  end
+
+  def test_pspawn_redirect_fd_from_file_with_fd_number
+    file = File.expand_path('../test-input', __FILE__)
+    text = 'redirect_fd_from_file_with_fd_number'
+    File.open(file, 'w') { |fd| fd.write(text) }
+
+    pid = pspawn(%Q{test "$(cat)" = "#{text}"}, 0 => file)
+    assert_process_exit_ok pid
+  ensure
+    File.unlink(file) rescue nil
+  end
+
+  def test_pspawn_redirect_fd_from_file_with_io_object
+    file = File.expand_path('../test-input', __FILE__)
+    text = 'redirect_fd_from_file_with_io_object'
+    File.open(file, 'w') { |fd| fd.write(text) }
+
+    pid = pspawn(%Q{test "$(cat)" = "#{text}"}, STDIN => file)
+    assert_process_exit_ok pid
+  ensure
+    File.unlink(file) rescue nil
+  end
+
+  def test_pspawn_redirect_fd_to_file_with_symbolic_name_and_flags
+    file = File.expand_path('../test-output', __FILE__)
+    text = 'redirect_fd_to_file_with_symbolic_name'
+    5.times do
+        pid = pspawn('echo', text, :out => [file, 'a'])
+        assert_process_exit_ok pid
+    end
+    assert File.exist?(file)
+    assert_equal "#{text}\n" * 5, File.read(file)
+  ensure
+    File.unlink(file) rescue nil
+  end
+
+  ##
   # Options Preprocessing
 
   def test_extract_process_spawn_arguments_with_options

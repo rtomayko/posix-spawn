@@ -52,6 +52,7 @@ module POSIX
           {}
         end
       flatten_process_spawn_options!(options)
+      normalize_process_spawn_redirect_file_options!(options)
 
       # shift the environ hash off the front if it's there and account for
       # possible :env key in options hash.
@@ -82,6 +83,67 @@ module POSIX
           key.to_ary.each { |fd| options[fd] = value }
           options.delete(key)
         end
+      end
+    end
+
+    # Mapping of string open modes to integer oflag versions.
+    OFLAGS = {
+      "r"  => File::RDONLY,
+      "r+" => File::RDWR   | File::CREAT,
+      "w"  => File::WRONLY | File::CREAT  | File::TRUNC,
+      "w+" => File::RDWR   | File::CREAT  | File::TRUNC,
+      "a"  => File::WRONLY | File::APPEND | File::CREAT,
+      "a+" => File::RDWR   | File::APPEND | File::CREAT
+    }
+
+    # Convert variations of redirecting to a file to a standard tuple.
+    #
+    # :in   => '/some/file'   => ['/some/file', 'r', 0644]
+    # :out  => '/some/file'   => ['/some/file', 'w', 0644]
+    # :err  => '/some/file'   => ['/some/file', 'w', 0644]
+    # STDIN => '/some/file'   => ['/some/file', 'r', 0644]
+    #
+    # Returns the modified options hash.
+    def normalize_process_spawn_redirect_file_options!(options)
+      options.to_a.each do |key, value|
+        # convert string and short array values to
+        if value.respond_to?(:to_str)
+          value = default_file_reopen_info(key, value)
+        elsif value.respond_to?(:to_ary) && value.size < 3
+          defaults = default_file_reopen_info(key, value[0])
+          value += defaults[value.size..-1]
+        else
+          value = nil
+        end
+
+        # replace string open mode flag maybe and replace original value
+        if value
+          value[1] = OFLAGS[value[1]] if value[1].respond_to?(:to_str)
+          options[key] = value
+        end
+      end
+    end
+
+    # The default [file, flags, mode] tuple for a given fd and filename. The
+    # default flags vary based on the what fd is being redirected. stdout and
+    # stderr default to write, while stdin and all other fds default to read.
+    #
+    # fd   - The file descriptor that is being redirected. This may be an IO
+    #        object, integer fd number, or :in, :out, :err for one of the standard
+    #        streams.
+    # file - The string path to the file that fd should be redirected to.
+    #
+    # Returns a [file, flags, mode] tuple.
+    def default_file_reopen_info(fd, file)
+      case fd
+      when :in, STDIN, $stdin, 0
+        [file, "r", 0644]
+      when :out, STDOUT, $stdout, 1
+        [file, "w", 0644]
+      when :err, STDERR, $stderr, 2
+        [file, "w", 0644]
+      else
+        [file, "r", 0644]
       end
     end
 

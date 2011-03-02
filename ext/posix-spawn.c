@@ -8,6 +8,7 @@
 #include <spawn.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <ruby.h>
 
@@ -110,14 +111,14 @@ posixspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_
 
 /*
  * Hash iterator that sets up the posix_spawn_file_actions_t with adddup2 +
- * clone operations for all redirects. Only hash pairs whose key and value
+ * close operations for all redirects. Only hash pairs whose key and value
  * represent fd numbers are processed.
  *
  * Returns ST_DELETE when an adddup2 operation was added; ST_CONTINUE when
  * no operation was performed.
  */
 static int
-posixspawn_file_actions_reopen(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+posixspawn_file_actions_adddup2(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
 {
 	int fd, newfd;
 
@@ -131,6 +132,38 @@ posixspawn_file_actions_reopen(VALUE key, VALUE val, posix_spawn_file_actions_t 
 
 	posix_spawn_file_actions_adddup2(fops, fd, newfd);
 	posix_spawn_file_actions_addclose(fops, fd);
+	return ST_DELETE;
+}
+
+/*
+ * Hash iterator that sets up the posix_spawn_file_actions_t with adddup2 +
+ * clone operations for all file redirects. Only hash pairs whose key is an
+ * fd number and value is a valid three-tuple [file, flags, mode] are
+ * processed.
+ *
+ * Returns ST_DELETE when an adddup2 operation was added; ST_CONTINUE when
+ * no operation was performed.
+ */
+static int
+posixspawn_file_actions_addopen(VALUE key, VALUE val, posix_spawn_file_actions_t *fops)
+{
+	int fd;
+	char *path;
+	int oflag;
+	mode_t mode;
+
+	fd = posixspawn_obj_to_fd(key);
+	if (fd < 0)
+		return ST_CONTINUE;
+
+	if (TYPE(val) != T_ARRAY || RARRAY_LEN(val) != 3)
+		return ST_CONTINUE;
+
+	path = StringValuePtr(RARRAY_PTR(val)[0]);
+	oflag = FIX2INT(RARRAY_PTR(val)[1]);
+	mode = FIX2INT(RARRAY_PTR(val)[2]);
+
+	posix_spawn_file_actions_addopen(fops, fd, path, oflag, mode);
 	return ST_DELETE;
 }
 
@@ -150,7 +183,10 @@ posixspawn_file_actions_operations_iter(VALUE key, VALUE val, posix_spawn_file_a
 	act = posixspawn_file_actions_addclose(key, val, fops);
 	if (act != ST_CONTINUE) return act;
 
-	act = posixspawn_file_actions_reopen(key, val, fops);
+	act = posixspawn_file_actions_adddup2(key, val, fops);
+	if (act != ST_CONTINUE) return act;
+
+	act = posixspawn_file_actions_addopen(key, val, fops);
 	if (act != ST_CONTINUE) return act;
 
 	return ST_CONTINUE;

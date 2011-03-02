@@ -16,7 +16,7 @@ USAGE
 
 STATUS
 
-These options to Process::spawn are currently supported:
+These Process::spawn arguments are currently supported:
 
   env: hash
     name => val : set the environment variable
@@ -33,6 +33,10 @@ These options to Process::spawn are currently supported:
       value:
         FD                        : redirect to the file descriptor in parent process
         :close                    : close the file descriptor in child process
+        string                    : redirect to file with open(string, "r" or "w")
+        [string]                  : redirect to file with open(string, File::RDONLY)
+        [string, open_mode]       : redirect to file with open(string, open_mode, 0644)
+        [string, open_mode, perm] : redirect to file with open(string, open_mode, perm)
       FD is one of follows
         :in     : the file descriptor 0 which is the standard input
         :out    : the file descriptor 1 which is the standard output
@@ -42,7 +46,7 @@ These options to Process::spawn are currently supported:
     current directory:
       :chdir => str
 
-These options are NOT currently supported:
+These are NOT currently supported:
 
   options: hash
     clearing environment variables:
@@ -59,10 +63,6 @@ These options are NOT currently supported:
       :umask => int
     redirection:
       value:
-        string                    : redirect to file with open(string, "r" or "w")
-        [string]                  : redirect to file with open(string, File::RDONLY)
-        [string, open_mode]       : redirect to file with open(string, open_mode, 0644)
-        [string, open_mode, perm] : redirect to file with open(string, open_mode, perm)
         [:child, FD]              : redirect to the redirected file descriptor
     file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
       :close_others => false : inherit fds (default for system and exec)
