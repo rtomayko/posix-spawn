@@ -66,18 +66,16 @@ similar to `Kernel#system`.
     status = Process.wait(pid)
 
 The first line executes `echo(1)` with a single argument and returns the new
-process's `pid`. The second line waits for the process to complete and returns
-a `Process::Status` object.
-
-Note that `spawn` does not wait for the process to finish execution and does not
-reap the status -- you must call `Process::wait` (or equivalent) or the process
-will become a zombie.
+process's `pid`. The second line waits for the process to complete and returns a
+`Process::Status` object. Note that `spawn` *does not* wait for the process to
+finish execution like `system` and does not reap the status -- you must call
+`Process::wait` (or equivalent) or the process will become a zombie.
 
 The `spawn` method is actually capable of performing a variety of other tasks,
 from setting up the new process's environment to redirecting arbitrary file
 descriptors. The full method signature is something like this:
 
-    `spawn([env], cmdname, argv1, ..., [options])`
+    spawn([env], cmdname, argv1, ..., [options])
 
 *NOTE: many of the following examples are taken directly from the Ruby 1.9
 [`Process::spawn`][ps] docs.*
@@ -89,15 +87,15 @@ When a value in `env` is `nil`, the variable is deleted in the child:
     # set FOO as BAR and unset BAZ.
     pid = spawn({"FOO" => "BAR", "BAZ" => nil}, 'echo', 'hello world')
 
-If a hash is given as `options`, it specifies a current directory and zero or fd
-redirects for the child process.
+If a hash is given as `options`, it specifies a current directory and zero or
+more fd redirects for the child process.
 
 The `:chdir` key in options specifies the current directory:
 
     pid = spawn(command, :chdir => "/var/tmp")
 
 The `:in`, `:out`, `:err`, a `Fixnum`, an `IO` object or an `Array` key
-specifies a redirection. For example, stderr can be merged into stdout as
+specifies a redirection. For example, `stderr` can be merged into `stdout` as
 follows:
 
     pid = spawn(command, :err => :out)
@@ -105,20 +103,20 @@ follows:
     pid = spawn(command, STDERR => :out)
     pid = spawn(command, STDERR => STDOUT)
 
-The hash key is a fd in the child process started by spawn. The
-standard error stream (`stderr`) in this case.
+The hash key is a fd in the child process started by `spawn` -- the standard
+error stream (`stderr`) in this case.
 
-The hash value is a fd in the parent process that calls spawn. The standard
+The hash value is a fd in the parent process that calls `spawn` -- the standard
 output stream (`stdout`) in this case.
 
 The standard input stream (stdin) can be specified by `:in`, `0` and `STDIN`.
 
 You can also specify a filename:
 
-    pid = spawn(command, :in => "/dev/null") # read mode
-    pid = spawn(command, :out => "/dev/null") # write mode
-    pid = spawn(command, :err => "log") # write mode
-    pid = spawn(command, 3 => "/dev/null") # read mode
+    pid = spawn(command, :in => "/dev/null")   # read mode
+    pid = spawn(command, :out => "/dev/null")  # write mode
+    pid = spawn(command, :err => "log")        # write mode
+    pid = spawn(command, 3 => "/dev/null")     # read mode
 
 When redirecting to `stdout` or `stderr`, the files are opened in write mode;
 otherwise, read mode is used.
@@ -126,9 +124,9 @@ otherwise, read mode is used.
 It's also possible to control the open flags and file permissions directly
 by passing an array value:
 
-    pid = spawn(command, :in=>["file"]) # read mode is assumed
+    pid = spawn(command, :in=>["file"])       # read mode is assumed
     pid = spawn(command, :in=>["file", "r"])
-    pid = spawn(command, :out=>["log", "w"]) # 0644 assumed
+    pid = spawn(command, :out=>["log", "w"])  # 0644 assumed
     pid = spawn(command, :out=>["log", "w", 0600])
     pid = spawn(command, :out=>["log", File::WRONLY|File::EXCL|File::CREAT, 0600])
 
@@ -147,8 +145,8 @@ processes using `IO.pipe`:
     output = rd.read
     Process.wait(pid)
 
-See the `STATUS` below for a full account of the various `Process::spawn`
-features supported and unsupported by `POSIX::Spawn::spawn`.
+See the `STATUS` section below for a full account of the various
+`Process::spawn` features supported (and unsupported) by `POSIX::Spawn::spawn`.
 
 ### POSIX::Spawn::Process
 
