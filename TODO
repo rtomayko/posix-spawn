@@ -6,7 +6,7 @@
 [x] raise exception on unhandled options
 [ ] POSIX::Spawn as ::Spawn?
 [ ] POSIX::Spawn#pspawn should be just #spawn
-[ ] benchmarks in README (tmm1)
+[x] benchmarks in README (tmm1)
 [ ] usage examples in README (spawn AND Process)
 
 [ ] popen* interfaces

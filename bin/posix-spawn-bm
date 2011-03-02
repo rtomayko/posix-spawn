@@ -52,24 +52,36 @@ if graphmode
     end
   end
 
-  max = max.ceil
+  max = max < 0.5 ? (max * 10).round / 10.0 : max.ceil
   minmb, maxmb = chunk/(1024**2), allocate/(1024**2)
+  series = %w[ fspawn pspawn ].map{|name| data[name].map{|d| "%.2f" % d }.join(',') }
+
+  chart = {
+    :chs  => '900x200',
+    :cht  => 'bvg', # grouped vertical bar chart
+    :chtt => "posix-spawn-bm -g -n #{iterations} -m #{maxmb} (#{RUBY_PLATFORM})",
+
+    :chf  => 'bg,s,f8f8f8', # background
+    :chbh => 'a,5,25', # 25px between bar groups
+
+    :chd  => "t:#{series.join('|')}", # data
+    :chds => "0,#{max}", # scale
+    :chdl => 'fspawn (fork+exec)|pspawn (posix_spawn)', # legend
+    :chco => 'ff0000,00ff00', # colors
+
+    :chxt => 'x,y',
+    :chxr => "1,0,#{max},#{max/5}", # y labels up to max time
+    :chxs => '1N** secs', # y labels are +=' secs'
+    :chxl => "0:|#{minmb.step(maxmb, maxmb/10).map{ |mb| "#{mb} MB"}.join('|')}", # x bucket labels
+  }
 
   url  = "https://chart.googleapis.com/chart?"
-  url += "chs=600x200&"
-  url += "chf=bg,s,f8f8f8&"
-  url += "chco=ff0000,00ff00&"
-  url += "chdl=fspawn (fork%2Bexec)|pspawn (posix_spawn)&"
-  url += "chxt=x,x,y,y&"
-  url += "chxr=0,#{minmb},#{maxmb},#{minmb}|2,0,#{max},#{max/5}&"
-  url += "chxp=1,50|3,50&"
-  url += "chxl=1:|MB%20RSS|3:|Seconds&"
-  url += "cht=lc&"
-  url += "chds=0,#{max*1.25}&"
-  url += "chd=t:#{data['fspawn'].join(',')}|#{data['pspawn'].join(',')}&"
-  url += "chtt=posix-spawn-bm -g -n #{iterations} -m #{maxmb} (#{RUBY_PLATFORM})"
+  url += chart.map do |key, val|
+    "#{key}=#{val.gsub(' ','%20').gsub('(','%28').gsub(')','%29').gsub('+','%2B')}"
+  end.join('&')
+  url += '#.png'
 
-  puts url.gsub(' ', '%20').gsub('(', '%28').gsub(')', '%29')
+  puts url
 
   exit!
 end
