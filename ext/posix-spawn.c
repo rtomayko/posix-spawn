@@ -131,7 +131,6 @@ posixspawn_file_actions_adddup2(VALUE key, VALUE val, posix_spawn_file_actions_t
 		return ST_CONTINUE;
 
 	posix_spawn_file_actions_adddup2(fops, fd, newfd);
-	posix_spawn_file_actions_addclose(fops, fd);
 	return ST_DELETE;
 }
 

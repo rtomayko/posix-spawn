@@ -88,6 +88,15 @@ module SpawnImplementationTests
     # this happens on darwin only. GNU does spawn and exits 127.
   end
 
+  def test_spawn_closing_multiple_fds_with_array_keys
+    rd, wr = IO.pipe
+    pid = _spawn('/bin/sh', '-c', "exec 2>/dev/null 101>&#{wr.to_i} || exit 1",
+                 [rd, wr, :out] => :close)
+    assert_process_exit_status pid, 1
+  ensure
+    [rd, wr].each { |fd| fd.close rescue nil }
+  end
+
   ##
   # FD => FD options
 
@@ -120,13 +129,20 @@ module SpawnImplementationTests
     # this happens on darwin only. GNU does spawn and exits 127.
   end
 
-  def test_spawn_closing_multiple_fds_with_array_keys
+  def test_spawn_redirect_stderr_and_stdout_to_same_fd
     rd, wr = IO.pipe
-    pid = _spawn('/bin/sh', '-c', "exec 2>/dev/null 101>&#{wr.to_i} || exit 1",
-                 [rd, wr, :out] => :close)
-    assert_process_exit_status pid, 1
+    pid = _spawn("echo hello world 1>&2", :err => wr, :out => wr, rd => :close)
+    wr.close
+    output = rd.read
+    assert_process_exit_ok pid
+    assert_equal "hello world\n", output
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
+  end
+
+  def test_spawn_does_not_close_fd_when_redirecting
+    pid = _spawn("exec 2>&1", :err => :out)
+    assert_process_exit_ok pid
   end
 
   ##
