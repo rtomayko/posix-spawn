@@ -6,6 +6,21 @@ module POSIX
   module Spawn
     extend self
 
+    # Spawn a child using the best method available.
+    #
+    # argv - Array of command line arguments passed to exec.
+    #
+    # Returns the pid of the newly spawned process.
+    def spawn(*argv)
+      if respond_to?(:_pspawn)
+        pspawn(*argv)
+      elsif ::Process.respond_to?(:spawn)
+        Process::spawn(*argv)
+      else
+        fspawn(*argv)
+      end
+    end
+
     # Spawn a child process using posix_spawn.
     #
     # argv - Array of command line arguments passed to exec.
