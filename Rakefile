@@ -32,5 +32,5 @@ task :test => :build
 
 desc 'Run some benchmarks'
 task :benchmark => :build do
-  ruby '-Ilib', 'bin/posix-spawn-bm'
+  ruby '-Ilib', 'bin/posix-spawn-benchmark'
 end
