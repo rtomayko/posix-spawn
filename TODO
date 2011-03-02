@@ -6,9 +6,11 @@
 [x] raise exception on unhandled options
 [x] benchmarks in README (tmm1)
 [x] POSIX::Spawn::spawn usage examples in README
-[ ] POSIX::Spawn#pspawn should be just #spawn
+[x] POSIX::Spawn#pspawn should be just #spawn
+[x] :err => :out case -- currently closing out after dup2'ing
 [ ] POSIX::Spawn::Process usage examples in README
-[ ] :err => :out case -- currently closing out after dup2'ing
+[ ] Better POSIX::Spawn#spawn comment docs
+
 
 [ ] popen* interfaces
 [ ] system interface
