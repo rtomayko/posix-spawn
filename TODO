@@ -4,9 +4,8 @@
 [x] high level Grit::Process like class (string based) (tmm1)
 [x] add FD => '/path/to/file' (all variations) (rtomayko)
 [x] raise exception on unhandled options
-[ ] POSIX::Spawn as ::Spawn?
-[ ] POSIX::Spawn#pspawn should be just #spawn
 [x] benchmarks in README (tmm1)
+[ ] POSIX::Spawn#pspawn should be just #spawn
 [ ] usage examples in README (spawn AND Process)
 
 [ ] popen* interfaces
@@ -15,3 +14,4 @@
 [ ] jruby Grit::Process stuff
 [ ] make vfork an option
 [ ] check all posix_spawn_* function call return values
+[ ] POSIX::Spawn as ::Spawn? (maybe, we'll see)
