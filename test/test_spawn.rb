@@ -150,6 +150,16 @@ module SpawnImplementationTests
     assert_process_exit_ok pid
   end
 
+  # Ruby 1.9 Process::spawn closes all fds by default. To keep an fd open, you
+  # have to pass it explicitly as fd => fd.
+  def test_explicitly_passing_an_fd_as_open
+    rd, wr = IO.pipe
+    pid = _spawn("exec 101>&#{wr.to_i} || exit 1", wr => wr)
+    assert_process_exit_ok pid
+  ensure
+    [rd, wr].each { |fd| fd.close rescue nil }
+  end
+
   ##
   # FD => file options
 
