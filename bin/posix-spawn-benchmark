@@ -67,7 +67,7 @@ if graphmode
     :chd  => "t:#{series.join('|')}", # data
     :chds => "0,#{max}", # scale
     :chdl => 'fspawn (fork+exec)|pspawn (posix_spawn)', # legend
-    :chco => 'ff0000,00ff00', # colors
+    :chco => '1f77b4,ff7f0e', # colors
 
     :chxt => 'x,y',
     :chxr => "1,0,#{max},#{max/5}", # y labels up to max time
