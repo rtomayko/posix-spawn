@@ -1,5 +1,3 @@
-Nowish:
-
 [x] license (LGPL)
 [x] fucking name this thing
 [x] fastspawn-bm should take iterations and memsize arguments
@@ -11,10 +9,9 @@ Nowish:
 [ ] benchmarks in README (tmm1)
 [ ] usage examples in README (spawn AND Process)
 
-Later:
-
 [ ] popen* interfaces
 [ ] system interface
 [ ] ` interface
 [ ] jruby Grit::Process stuff
 [ ] make vfork an option
+[ ] check all posix_spawn_* function call return values
