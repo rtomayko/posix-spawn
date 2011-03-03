@@ -42,7 +42,7 @@ module POSIX
 
       fork do
         begin
-          # handle io redirection options
+          # handle FD => {FD, :close, [file,mode,perms]} options
           options.map do |key, val|
             if fd?(key)
               key = fd_to_io(key)
@@ -62,19 +62,18 @@ module POSIX
               end
             end
           end
+
+          # setup child environment
+          env.each { |k, v| ENV[k] = v }
+
+          # { :chdir => '/' } in options means change into that dir
+          ::Dir.chdir(options[:chdir]) if options[:chdir]
+
+          # do the deed
+          ::Kernel::exec(*argv)
         rescue
           exit!(127)
         end
-
-        # setup child environment
-        env.each { |k, v| ENV[k] = v }
-
-        # { :chdir => '/' } in options means change into that dir
-        ::Dir.chdir(options[:chdir]) if options[:chdir]
-
-        # do the deed
-        ::Kernel::exec(*argv)
-        exit! 1
       end
     end
 
