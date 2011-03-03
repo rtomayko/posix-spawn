@@ -111,6 +111,9 @@ module POSIX
           @status = waitpid(pid)      rescue nil
         end
         raise
+      ensure
+        # let's be absolutely certain these are closed
+        [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
       end
 
       # Exception raised when the total number of bytes output on the command's

@@ -10,6 +10,7 @@
 [x] :err => :out case -- currently closing out after dup2'ing
 [ ] POSIX::Spawn::Process usage examples in README
 [ ] Better POSIX::Spawn#spawn comment docs
+[ ] POSIX::Spawn::Process.new should have same method signature as Process::spawn
 
 
 [ ] popen* interfaces
