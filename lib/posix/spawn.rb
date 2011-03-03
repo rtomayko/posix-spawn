@@ -3,49 +3,162 @@ require 'posix/spawn/version'
 require 'posix/spawn/child'
 
 module POSIX
+  # The POSIX::Spawn module implements a compatible subset of Ruby 1.9's
+  # Process::spawn and related methods using the IEEE Std 1003.1 posix_spawn(2)
+  # system interfaces where available, or a pure Ruby fork/exec based
+  # implementation when not.
+  #
+  # In Ruby 1.9, a versatile new process spawning interface was added
+  # (Process::spawn) as the foundation for enhanced versions of existing
+  # process-related methods like Kernel#system, Kernel#`, and IO#popen. These
+  # methods are backward compatible with their Ruby 1.8 counterparts but
+  # support a large number of new options. The POSIX::Spawn module implements
+  # many of these methods with support for most of Ruby 1.9's features.
+  #
+  # The argument signatures for all of these methods follow a new convention,
+  # making it possible to take advantage of Process::spawn features:
+  #
+  #   spawn([env], command, [argv1, ...], [options])
+  #   system([env], command, [argv1, ...], [options])
+  #   popen([[env], command, [argv1, ...]], mode="r", [options])
+  #
+  # The env, command, and options arguments are described below.
+  #
+  # == Environment
+  #
+  # If a hash is given in the first argument (env), the child process's
+  # environment becomes a merge of the parent's and any modifications
+  # specified in the hash. When a value in env is nil, the variable is
+  # unset in the child:
+  #
+  #     # set FOO as BAR and unset BAZ.
+  #     pid = spawn({"FOO" => "BAR", "BAZ" => nil}, 'echo', 'hello world')
+  #
+  # == Command
+  #
+  # The command and optional argvN string arguments specify the command to
+  # execute and any program arguments. When only command is given and
+  # includes a space character, the command text is executed by the system
+  # shell interpreter, as if by:
+  #
+  #     /bin/sh -c 'command'
+  #
+  # When command does not include a space character, or one or more argvN
+  # arguments are given, the command is executed as if by execve(2) with
+  # each argument forming the new program's argv.
+  #
+  # NOTE: Use of the shell variation is generally discouraged unless you
+  # indeed want to execute a shell program. Specifying an explicitly argv is
+  # typically more secure and less error prone in most cases.
+  #
+  # == Options
+  #
+  # When a hash is given in the last argument (options), it specifies a
+  # current directory and zero or more fd redirects for the child process.
+  #
+  # The :chdir option specifies the current directory:
+  #
+  #     pid = spawn(command, :chdir => "/var/tmp")
+  #
+  # The :in, :out, :err, a Fixnum, an IO object or an Array option specify
+  # fd redirection. For example, stderr can be merged into stdout as follows:
+  #
+  #     spawn(command, :err => :out)
+  #     spawn(command, 2 => 1)
+  #     spawn(command, STDERR => :out)
+  #     spawn(command, STDERR => STDOUT)
+  #
+  # The key is a fd in the newly spawned child process (stderr in this case).
+  # The value is a fd in the parent process (stdout in this case).
+  #
+  # You can also specify a filename for redirection instead of an fd:
+  #
+  #     spawn(command, :in => "/dev/null")   # read mode
+  #     spawn(command, :out => "/dev/null")  # write mode
+  #     spawn(command, :err => "log")        # write mode
+  #     spawn(command, 3 => "/dev/null")     # read mode
+  #
+  # When redirecting to stdout or stderr, the files are opened in write mode;
+  # otherwise, read mode is used.
+  #
+  # It's also possible to control the open flags and file permissions
+  # directly by passing an array value:
+  #
+  #     spawn(command, :in=>["file"])       # read mode assumed
+  #     spawn(command, :in=>["file", "r"])  # explicit read mode
+  #     spawn(command, :out=>["log", "w"])  # explicit write mode, 0644 assumed
+  #     spawn(command, :out=>["log", "w", 0600])
+  #     spawn(command, :out=>["log", File::APPEND | File::CREAT, 0600])
+  #
+  # The array is a [filename, open_mode, perms] tuple. open_mode can be a
+  # string or an integer. When open_mode is omitted or nil, File::RDONLY is
+  # assumed. The perms element should be an integer. When perms is omitted or
+  # nil, 0644 is assumed.
+  #
+  # The :close It's possible to direct an fd be closed in the child process.  This is
+  # important for implementing `popen`-style logic and other forms of IPC between
+  # processes using `IO.pipe`:
+  #
+  #     rd, wr = IO.pipe
+  #     pid = spawn('echo', 'hello world', rd => :close, :stdout => wr)
+  #     wr.close
+  #     output = rd.read
+  #     Process.wait(pid)
+  #
+  # == Spawn Implementation
+  #
+  # The POSIX::Spawn#spawn method uses the best available implementation given
+  # the current platform and Ruby version. In order of preference, they are:
+  #
+  #  1. The posix_spawn based C extension method (pspawn).
+  #  2. Process::spawn when available (Ruby 1.9 only).
+  #  3. A simple pure-Ruby fork/exec based spawn implementation compatible
+  #     with Ruby >= 1.8.7.
+  #
   module Spawn
     extend self
 
-    # Exception raised when the total number of bytes output on the command's
-    # stderr and stdout streams exceeds the maximum output size (:max option).
-    class MaximumOutputExceeded < StandardError
-    end
-
-    # Exception raised when timeout is exceeded.
-    class TimeoutExceeded < StandardError
-    end
-
-    # Spawn a child using the best method available.
+    # Spawn a child process with a variety of options using the best
+    # available implementation for the current platform and Ruby version.
     #
-    # argv - Array of command line arguments passed to exec.
+    # spawn([env], command, [argv1, ...], [options])
     #
-    # Returns the pid of the newly spawned process.
-    def spawn(*argv)
+    # env     - Optional hash specifying the new process's environment.
+    # command - A string command name, or shell program, used to determine the
+    #           program to execute.
+    # argvN   - Zero or more string program arguments (argv).
+    # options - Optional hash of operations to perform before executing the
+    #           new child process.
+    #
+    # Returns the integer pid of the newly spawned process.
+    # Raises any number of Errno:: exceptions on failure.
+    def spawn(*args)
       if respond_to?(:_pspawn)
-        pspawn(*argv)
+        pspawn(*args)
       elsif ::Process.respond_to?(:spawn)
-        ::Process::spawn(*argv)
+        ::Process::spawn(*args)
       else
-        fspawn(*argv)
+        fspawn(*args)
       end
     end
 
-    # Spawn a child process using posix_spawn.
+    # Spawn a child process with a variety of options using the posix_spawn(2)
+    # systems interfaces. Supports the standard spawn interface as described in
+    # the POSIX::Spawn module documentation.
     #
-    # Returns the pid of the newly spawned process.
-    # Raises NotImplemented when pfork is not supported on the current platform.
-    def pspawn(*argv)
-      env, argv, options = extract_process_spawn_arguments(*argv)
+    # Raises NotImplementedError when the posix_spawn_ext module could not be
+    # loaded due to lack of platform support.
+    def pspawn(*args)
+      env, argv, options = extract_process_spawn_arguments(*args)
       raise NotImplementedError unless respond_to?(:_pspawn)
       _pspawn(env, argv, options)
     end
 
-    # Spawn a child process using a normal fork + exec.
-    #
-    # Returns the pid of the newly spawned process.
-    def fspawn(*argv)
-      env, argv, options = extract_process_spawn_arguments(*argv)
-
+    # Spawn a child process with a variety of options using a pure
+    # Ruby fork + exec. Supports the standard spawn interface as described in
+    # the POSIX::Spawn module documentation.
+    def fspawn(*args)
+      env, argv, options = extract_process_spawn_arguments(*args)
       if badopt = options.find{ |key,val| !fd?(key) && ![:chdir,:unsetenv_others].include?(key) }
         raise ArgumentError, "Invalid option: #{badopt[0].inspect}"
       elsif !argv.is_a?(Array) || !argv[0].is_a?(Array) || argv[0].size != 2
@@ -90,12 +203,16 @@ module POSIX
       end
     end
 
-    # Executes a command in a subshell. The command's exit status is
-    # available as $?.
+    # Executes a command and waits for it to complete. The command's exit
+    # status is available as $?. Supports the standard spawn interface as
+    # described in the POSIX::Spawn module documentation.
     #
-    # Returns true if the command returns a zero exit status, or false for non-zero exit.
-    def system(*argv)
-      pid = spawn(*argv)
+    # This method is compatible with Kernel#system.
+    #
+    # Returns true if the command returns a zero exit status, or false for
+    # non-zero exit.
+    def system(*args)
+      pid = spawn(*args)
       return false if pid <= 0
       ::Process.waitpid(pid)
       $?.exitstatus == 0
@@ -103,7 +220,9 @@ module POSIX
       false
     end
 
-    # Executes a command in a subshell and returns stdout.
+    # Executes a command in a subshell using the system's shell interpreter
+    # and returns anything written to the new process's stdout. This method
+    # is compatible with Kernel#`.
     #
     # Returns the String output of the command.
     def `(cmd)
@@ -122,19 +241,15 @@ module POSIX
       [r, w].each{ |io| io.close rescue nil }
     end
 
-    # Start a process with spawn options and return
-    # popen4([env], command, arg1, arg2, [opt])
+    # Spawn a child process with all standard IO streams piped in and out of
+    # the spawning process. Supports the standard spawn interface as described
+    # in the POSIX::Spawn module documentation.
     #
-    #   env     - The child process's environment as a Hash.
-    #   command - The command and zero or more arguments.
-    #   options - An options hash.
-    #
-    # See Ruby 1.9 IO.popen and Process::spawn docs for more info:
-    # http://www.ruby-doc.org/core-1.9/classes/IO.html#M001640
-    #
-    # Returns a [pid, stdin, stderr, stdout] tuple where pid is the child
-    # process's pid, stdin is a writeable IO object, and stdout + stderr are
-    # readable IO objects.
+    # Returns a [pid, stdin, stderr, stdout] tuple, where pid is the new
+    # process's pid, stdin is a writeable IO object, and stdout / stderr are
+    # readable IO objects. The caller should take care to close all IO objects
+    # when finished and the child process's status must be collected by a call
+    # to Process::waitpid or equivalent.
     def popen4(*argv)
       # create some pipes (see pipe(2) manual -- the ruby docs suck)
       ird, iwr = IO.pipe
@@ -155,6 +270,19 @@ module POSIX
     ensure
       # we're in the parent, close child-side fds
       [ird, owr, ewr].each { |fd| fd.close }
+    end
+
+    ##
+    # Process::Spawn::Child Exceptions
+
+    # Exception raised when the total number of bytes output on the command's
+    # stderr and stdout streams exceeds the maximum output size (:max option).
+    # Currently
+    class MaximumOutputExceeded < StandardError
+    end
+
+    # Exception raised when timeout is exceeded.
+    class TimeoutExceeded < StandardError
     end
 
     private
