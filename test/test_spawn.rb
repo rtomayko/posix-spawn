@@ -254,9 +254,18 @@ module SpawnImplementationTests
   # Exceptions
 
   def test_spawn_raises_exception_on_unsupported_options
+    exception = nil
+
     assert_raise ArgumentError do
-      _spawn('echo howdy', :out => '/dev/null', :oops => 'blaahh')
+      begin
+        _spawn('echo howdy', :out => '/dev/null', :oops => 'blaahh')
+      rescue Exception => e
+        exception = e
+        raise e
+      end
     end
+
+    assert_match /:oops/, exception.message
   end
 
   ##

@@ -362,8 +362,7 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	}
 
 	if (RHASH_SIZE(options) > 0) {
-		/* TODO include options.keys.first name in error message */
-		rb_raise(rb_eArgError, "Invalid options");
+		rb_raise(rb_eArgError, "Invalid option: %s", RSTRING_PTR(rb_inspect(rb_funcall(options, rb_intern("first"), 0))));
 		return -1;
 	}
 
