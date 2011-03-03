@@ -110,6 +110,41 @@ module POSIX
       [r, w].each{ |io| io.close rescue nil }
     end
 
+    # Start a process with spawn options and return
+    # popen4([env], command, arg1, arg2, [opt])
+    #
+    #   env     - The child process's environment as a Hash.
+    #   command - The command and zero or more arguments.
+    #   options - An options hash.
+    #
+    # See Ruby 1.9 IO.popen and Process::spawn docs for more info:
+    # http://www.ruby-doc.org/core-1.9/classes/IO.html#M001640
+    #
+    # Returns a [pid, stdin, stderr, stdout] tuple where pid is the child
+    # process's pid, stdin is a writeable IO object, and stdout + stderr are
+    # readable IO objects.
+    def popen4(*argv)
+      # create some pipes (see pipe(2) manual -- the ruby docs suck)
+      ird, iwr = IO.pipe
+      ord, owr = IO.pipe
+      erd, ewr = IO.pipe
+
+      # spawn the child process with either end of pipes hooked together
+      opts =
+        ((argv.pop if argv[-1].is_a?(Hash)) || {}).merge(
+          # redirect fds        # close other sides
+          :in  => ird,          iwr  => :close,
+          :out => owr,          ord  => :close,
+          :err => ewr,          erd  => :close
+        )
+      pid = spawn(*(argv + [opts]))
+
+      [pid, iwr, ord, erd]
+    ensure
+      # we're in the parent, close child-side fds
+      [ird, owr, ewr].each { |fd| fd.close }
+    end
+
     private
 
     # Turns the various varargs incantations supported by Process::spawn into a
