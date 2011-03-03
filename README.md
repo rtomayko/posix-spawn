@@ -46,17 +46,17 @@ the parent process.
 ## USAGE
 
 This library includes two distinct interfaces: `POSIX::Spawn::spawn`, a lower
-level process spawning interface based on the `Process::spawn` include in Ruby
-1.9, and `POSIX::Spawn::Child`, a higher level class geared toward easy spawning
-of processes with simple string based standard input/output/error stream
-handling. The former is much more versatile, the latter requires much less
-code for certain common scenarios.
+level process spawning interface based on the new Ruby 1.9 `Process::spawn`
+method, and `POSIX::Spawn::Child`, a higher level class geared toward easy
+spawning of processes with simple string based standard input/output/error
+stream handling. The former is much more versatile, the latter requires much
+less code for certain common scenarios.
 
 ### POSIX::Spawn::spawn
 
 The `POSIX::Spawn` module (with help from the accompanying C extension)
 implements a subset of the [Ruby 1.9 Process::spawn][ps] interface, largely
-through the use of the [POSIX standard `posix_spawn` family of C functions][po].
+through the use of the [IEEE Std 1003.1 `posix_spawn(2)` systems interfaces][po].
 These are widely supported by various UNIX operating systems.
 
 [ps]: http://www.ruby-doc.org/core-1.9/classes/Process.html#M002230
@@ -87,7 +87,7 @@ features supported by `POSIX::Spawn::spawn`.
 ### `system`, `popen4`, and <code>`</code>
 
 In addition to the `spawn` method, Ruby 1.9 compatible implementations of
-`Kernel#system` and <code>Kernel#`</code> are provided in the `POSIX::Spawn`
+`Kernel#system` and <code>Kernel#\`</code> are provided in the `POSIX::Spawn`
 module. The `popen4` method can be used to spawn a process with redirected
 stdin, stdout, and stderr objects.
 
@@ -165,7 +165,8 @@ docs for more info.
 The `POSIX::Spawn::spawn` method is designed to be as compatible with Ruby 1.9's
 `Process::spawn` as possible. Right now, it is a compatible subset.
 
-These `Process::spawn` arguments are currently supported:
+These `Process::spawn` arguments are currently supported to any of
+`Spawn::spawn`, `Spawn::system`, `Spawn::popen4`, and `Spawn::Child.new`:
 
     env: hash
       name => val : set the environment variable
@@ -224,4 +225,4 @@ Copyright (C) by
 and
 [Aman Gupta](https://github.com/tmm1).
 
-See the COPYING file for more information on license and redistribution.
+See the `COPYING` file for more information on license and redistribution.
