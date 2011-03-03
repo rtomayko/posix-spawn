@@ -2,7 +2,12 @@ require 'test/unit'
 require 'posix-spawn'
 
 module SpawnImplementationTests
-  def test_spawn
+  def test_spawn_simple
+    pid = _spawn('true')
+    assert_process_exit_ok pid
+  end
+
+  def test_spawn_with_args
     pid = _spawn('true', 'with', 'some stuff')
     assert_process_exit_ok pid
   end
