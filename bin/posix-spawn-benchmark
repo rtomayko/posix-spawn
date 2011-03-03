@@ -106,4 +106,12 @@ bm 40 do |x|
       Process.wait(pid)
     end
   end
+  if Process.respond_to?(:spawn)
+    x.report("spawn (native):") do
+      iterations.times do
+        pid = Process.spawn('true')
+        Process.wait(pid)
+      end
+    end
+  end
 end
