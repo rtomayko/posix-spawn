@@ -36,7 +36,9 @@ module POSIX
     # Returns the pid of the newly spawned process.
     def fspawn(*argv)
       env, argv, options = extract_process_spawn_arguments(*argv)
-      raise ArgumentError, "Invalid options" if options.find{ |key,val| !fd?(key) && ![:chdir].include?(key) }
+      if options.find{ |key,val| !fd?(key) && ![:chdir].include?(key) }
+        raise ArgumentError, "Invalid options"
+      end
 
       fork do
         begin
