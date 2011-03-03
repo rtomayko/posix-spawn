@@ -20,3 +20,9 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER  IN  AN
 ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN  THE
 SOFTWARE.
+
+A small portion of the environ dup'ing code in ext/posix-spawn.c
+was taken from glibc <http://www.gnu.org/s/libc/> and is maybe
+Copyright (c) 2011 by The Free Software Foundation or maybe
+by others mentioned in the glibc LICENSES file. glibc is
+distributed under the terms of the LGPL license.
