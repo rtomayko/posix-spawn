@@ -6,6 +6,15 @@ module POSIX
   module Spawn
     extend self
 
+    # Exception raised when the total number of bytes output on the command's
+    # stderr and stdout streams exceeds the maximum output size (:max option).
+    class MaximumOutputExceeded < StandardError
+    end
+
+    # Exception raised when timeout is exceeded.
+    class TimeoutExceeded < StandardError
+    end
+
     # Spawn a child using the best method available.
     #
     # argv - Array of command line arguments passed to exec.

@@ -113,15 +113,6 @@ module POSIX
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
       end
 
-      # Exception raised when the total number of bytes output on the command's
-      # stderr and stdout streams exceeds the maximum output size (:max option).
-      class MaximumOutputExceeded < StandardError
-      end
-
-      # Exception raised when timeout is exceeded.
-      class TimeoutExceeded < StandardError
-      end
-
       # Maximum buffer size for reading
       BUFSIZE = (32 * 1024)
 

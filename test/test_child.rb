@@ -55,31 +55,31 @@ class ChildTest < Test::Unit::TestCase
   end
 
   def test_max
-    assert_raise Child::MaximumOutputExceeded do
+    assert_raise MaximumOutputExceeded do
       Child.new('yes', :max => 100_000)
     end
   end
 
   def test_max_with_child_hierarchy
-    assert_raise Child::MaximumOutputExceeded do
+    assert_raise MaximumOutputExceeded do
       Child.new('/bin/sh', '-c', 'yes', :max => 100_000)
     end
   end
 
   def test_max_with_stubborn_child
-    assert_raise Child::MaximumOutputExceeded do
+    assert_raise MaximumOutputExceeded do
       Child.new("trap '' TERM; yes", :max => 100_000)
     end
   end
 
   def test_timeout
-    assert_raise Child::TimeoutExceeded do
+    assert_raise TimeoutExceeded do
       Child.new('sleep 1', :timeout => 0.05)
     end
   end
 
   def test_timeout_with_child_hierarchy
-    assert_raise Child::TimeoutExceeded do
+    assert_raise TimeoutExceeded do
       Child.new('/bin/sh', '-c', 'yes', :timeout => 0.05)
     end
   end
