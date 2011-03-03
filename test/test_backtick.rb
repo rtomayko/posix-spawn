@@ -27,4 +27,10 @@ class BacktickTest < Test::Unit::TestCase
     assert_equal out, "/bin/sh: nosuchcmd: command not found\n"
     assert_equal $?.exitstatus, 127
   end
+
+  def test_backtick_huge
+    out = `yes | head -50000`
+    assert_equal out.size, 100000
+    assert_equal $?.exitstatus, 0
+  end
 end
