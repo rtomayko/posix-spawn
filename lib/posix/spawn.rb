@@ -49,7 +49,11 @@ module POSIX
                 val = fd_to_io(val)
                 key.reopen(val)
               elsif val == :close
-                key.close
+                if key.respond_to?(:close_on_exec)
+                  key.close_on_exec = true
+                else
+                  key.close
+                end
               elsif val.is_a?(Array)
                 file, mode_string, perms = *val
                 key.reopen(File.open(file, mode_string, perms))
