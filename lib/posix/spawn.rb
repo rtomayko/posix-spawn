@@ -78,6 +78,41 @@ module POSIX
       end
     end
 
+    # Executes a command in a subshell. The command's exit status is
+    # available as $?.
+    #
+    # Returns true if the command returns a zero exit status, or false for non-zero exit.
+    # Returns nil if the command fails to execute.
+    def system(*argv)
+      env, argv, options = extract_process_spawn_arguments(*argv)
+      if argv.length == 1 and argv[0][0] == argv[0][1]
+        argv = [['/bin/sh', '/bin/sh'], '-c', argv[0][0]]
+      end
+
+      pid = spawn(env, *(argv + [options]))
+      return nil if pid <= 0
+      ::Process.waitpid(pid)
+      $?.exitstatus == 0
+    end
+
+    # Executes a command in a subshell and returns stdout.
+    #
+    # Returns the String output of the command.
+    # Returns nil if the command fails.
+    def `(cmd)
+      r, w = IO.pipe
+      pid = spawn(['/bin/sh', '/bin/sh'], '-c', cmd, :out => w, r => :close)
+      if pid > 0
+        ::Process.waitpid(pid)
+        w.close
+        r.read
+      else
+        ''
+      end
+    ensure
+      [w, r].each{ |io| io.close rescue nil }
+    end
+
     private
 
     # Turns the various varargs incantations supported by Process::spawn into a

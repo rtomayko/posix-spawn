@@ -14,8 +14,8 @@
 
 
 [ ] popen* interfaces
-[ ] system interface
-[ ] ` interface
+[x] system interface
+[x] ` interface
 [ ] jruby Grit::Process stuff
 [ ] make vfork an option
 [ ] check all posix_spawn_* function call return values
