@@ -74,13 +74,13 @@ class ChildTest < Test::Unit::TestCase
 
   def test_timeout
     assert_raise TimeoutExceeded do
-      Child.new('sleep 1', :timeout => 0.05)
+      Child.new('sleep', '1', :timeout => 0.05)
     end
   end
 
   def test_timeout_with_child_hierarchy
     assert_raise TimeoutExceeded do
-      Child.new('/bin/sh', '-c', 'yes', :timeout => 0.05)
+      Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05)
     end
   end
 
@@ -93,7 +93,7 @@ class ChildTest < Test::Unit::TestCase
         echo stuff on stderr 1>&2;
       done
     "
-    p = Child.new('/bin/sh', '-c', command, :input => input)
+    p = Child.new(command, :input => input)
     assert_equal input.size, p.out.size
     assert_equal input.size, p.err.size
     assert p.success?

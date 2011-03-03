@@ -1,74 +1,80 @@
 module POSIX
   module Spawn
     # POSIX::Spawn::Child includes logic for executing child processes and
-    # reading/writing from their standard input, output, and error streams.
+    # reading/writing from their standard input, output, and error streams. It's
+    # designed to take all input in a single string and provides all output
+    # (stderr and stdout) as single strings and is therefore not well-suited
+    # to streaming large quantities of data in and out of commands.
     #
-    # Create an run a process to completion:
+    # Create and run a process to completion:
     #
-    #   >> process = POSIX::Spawn::Child.new(['git', '--help'])
+    #   >> child = POSIX::Spawn::Child.new('git', '--help')
     #
     # Retrieve stdout or stderr output:
     #
-    #   >> process.out
+    #   >> child.out
     #   => "usage: git [--version] [--exec-path[=GIT_EXEC_PATH]]\n ..."
-    #   >> process.err
+    #   >> child.err
     #   => ""
     #
     # Check process exit status information:
     #
-    #   >> process.status
+    #   >> child.status
     #   => #<Process::Status: pid=80718,exited(0)>
     #
-    # POSIX::Spawn::Child is designed to take all input in a single string and
-    # provides all output as single strings. It is therefore not well suited
-    # to streaming large quantities of data in and out of commands.
+    # To write data on the new process's stdin immediately after spawning:
     #
-    # Q: Why not use popen3 or hand-roll fork/exec code?
+    #   >> child = POSIX::Spawn::Child.new('bc', :input => '40 + 2')
+    #   >> child.out
+    #   "42\n"
+    #
+    # Q: Why use POSIX::Spawn::Child instead of popen3, hand rolled fork/exec
+    # code, or Process::spawn?
     #
     # - It's more efficient than popen3 and provides meaningful process
     #   hierarchies because it performs a single fork/exec. (popen3 double forks
     #   to avoid needing to collect the exit status and also calls
     #   Process::detach which creates a Ruby Thread!!!!).
     #
-    # - It's more portable than hand rolled pipe, fork, exec code because
-    #   fork(2) and exec(2) aren't available on all platforms. In those cases,
-    #   POSIX::Spawn::Child falls back to using whatever janky substitutes the platform
-    #   provides.
+    # - It handles all max pipe buffer (PIPE_BUF) hang cases when reading and
+    #   writing semi-large amounts of data. This is non-trivial to implement
+    #   correctly and must be accounted for with popen3, spawn, or hand rolled
+    #   fork/exec code.
     #
-    # - It handles all max pipe buffer hang cases, which is non trivial to
-    #   implement correctly and must be accounted for with either popen3 or
-    #   hand rolled fork/exec code.
+    # - It's more portable than hand rolled pipe, fork, exec code because
+    #   fork(2) and exec aren't available on all platforms. In those cases,
+    #   POSIX::Spawn::Child falls back to using whatever janky substitutes
+    #   the platform provides.
     class Child
       include POSIX::Spawn
 
-      # Create and execute a new process.
+      # Spawn a new process, write all input and read all output, and wait for
+      # the program to exit. Supports the standard spawn interface as described
+      # in the POSIX::Spawn module documentation:
       #
-      # argv    - Array of [command, arg1, ...] strings to use as the new
-      #           process's argv. When argv is a String, the shell is used
-      #           to interpret the command.
-      # env     - The new process's environment variables. This is merged with
-      #           the current environment as if by ENV.merge(env).
-      # options - Additional options:
-      #             :input   => str to write str to the process's stdin.
-      #             :timeout => int number of seconds before we given up.
-      #             :max     => total number of output bytes
-      #           A subset of Process::spawn options are also supported on all
-      #           platforms:
-      #             :chdir => str to start the process in different working dir.
+      #   new([env], command, [argv1, ...], [options])
       #
-      # Returns a new Child instance that has already executed to completion.
-      # The out, err, and status attributes are immediately available.
-      def initialize(*argv)
-        env, argv, options = extract_process_spawn_arguments(*argv)
-        @argv = argv
-        @env = env
-
+      # The following options are supported in addition to the standard
+      # POSIX::Spawn options:
+      #
+      #   :input   => str      Write str to the new process's standard input.
+      #   :timeout => int      Maximum number of seconds to allow the process
+      #                        to execute before aborting with a TimeoutExceeded
+      #                        exception.
+      #   :max     => total    Maximum number of bytes of output to allow the
+      #                        process to generate before aborting with a
+      #                        MaximumOutputExceeded exception.
+      #
+      # Returns a new Child instance whose underlying process has already
+      # executed to completion. The out, err, and status attributes are
+      # immediately available.
+      def initialize(*args)
+        @env, @argv, options = extract_process_spawn_arguments(*args)
         @options = options.dup
         @input = @options.delete(:input)
         @timeout = @options.delete(:timeout)
         @max = @options.delete(:max)
         @options.delete(:chdir) if @options[:chdir].nil?
-
         exec!
       end
 

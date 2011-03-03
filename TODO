@@ -11,7 +11,7 @@
 [x] POSIX::Spawn::Process.new should have same method signature as Process::spawn
 [x] POSIX::Spawn::Process renamed to POSIX::Spawn::Child
 [x] Better POSIX::Spawn#spawn comment docs
-[ ] POSIX::Spawn::Child usage examples in README
+[x] POSIX::Spawn::Child usage examples in README
 
 
 [ ] popen* interfaces

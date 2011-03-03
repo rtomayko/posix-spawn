@@ -32,7 +32,7 @@ module POSIX
   # unset in the child:
   #
   #     # set FOO as BAR and unset BAZ.
-  #     pid = spawn({"FOO" => "BAR", "BAZ" => nil}, 'echo', 'hello world')
+  #     spawn({"FOO" => "BAR", "BAZ" => nil}, 'echo', 'hello world')
   #
   # == Command
   #
@@ -58,7 +58,7 @@ module POSIX
   #
   # The :chdir option specifies the current directory:
   #
-  #     pid = spawn(command, :chdir => "/var/tmp")
+  #     spawn(command, :chdir => "/var/tmp")
   #
   # The :in, :out, :err, a Fixnum, an IO object or an Array option specify
   # fd redirection. For example, stderr can be merged into stdout as follows:
