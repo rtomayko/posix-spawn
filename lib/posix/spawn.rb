@@ -45,8 +45,11 @@ module POSIX
     # Returns the pid of the newly spawned process.
     def fspawn(*argv)
       env, argv, options = extract_process_spawn_arguments(*argv)
+
       if badopt = options.find{ |key,val| !fd?(key) && ![:chdir,:unsetenv_others].include?(key) }
         raise ArgumentError, "Invalid option: #{badopt[0].inspect}"
+      elsif !argv.is_a?(Array) || !argv[0].is_a?(Array) || argv[0].size != 2
+        raise ArgumentError, "Invalid command name"
       end
 
       fork do

@@ -280,9 +280,7 @@ static VALUE
 rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
 	int i, ret;
-	long argc = RARRAY_LEN(argv);
 	char **envp = NULL;
-	char *cargv[argc + 1];
 	VALUE dirname;
 	VALUE cmdname;
 	VALUE unsetenv_others_p = Qfalse;
@@ -291,6 +289,23 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
 	posix_spawnattr_t attr;
+
+	/* argv is a [[cmdname, argv0], argv1, argvN, ...] array. */
+	if (TYPE(argv) != T_ARRAY ||
+	    TYPE(RARRAY_PTR(argv)[0]) != T_ARRAY ||
+	    RARRAY_LEN(RARRAY_PTR(argv)[0]) != 2)
+		rb_raise(rb_eArgError, "Invalid command name");
+
+	long argc = RARRAY_LEN(argv);
+	char *cargv[argc + 1];
+
+	cmdname = RARRAY_PTR(argv)[0];
+	file = StringValuePtr(RARRAY_PTR(cmdname)[0]);
+
+	cargv[0] = StringValuePtr(RARRAY_PTR(cmdname)[1]);
+	for (i = 1; i < argc; i++)
+		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
+	cargv[argc] = NULL;
 
 	if (TYPE(options) == T_HASH) {
 		unsetenv_others_p = rb_hash_delete(options, ID2SYM(rb_intern("unsetenv_others")));
@@ -330,14 +345,6 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 			rb_hash_foreach(env, each_env_i, (VALUE)envp);
 		}
 	}
-
-	/* argv is a [[cmdname, argv0], argv1, argvN, ...] array. */
-	cmdname = RARRAY_PTR(argv)[0];
-	file = StringValuePtr(RARRAY_PTR(cmdname)[0]);
-	cargv[0] = StringValuePtr(RARRAY_PTR(cmdname)[1]);
-	for (i = 1; i < argc; i++)
-		cargv[i] = StringValuePtr(RARRAY_PTR(argv)[i]);
-	cargv[argc] = NULL;
 
 	posixspawn_file_actions_init(&fops, options);
 

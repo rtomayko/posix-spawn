@@ -17,6 +17,12 @@ module SpawnImplementationTests
     assert_process_exit_ok pid
   end
 
+  def test_spawn_with_invalid_argv
+    assert_raise ArgumentError do
+      _spawn(['echo','b','c','d'])
+    end
+  end
+
   ##
   # Environ
 
