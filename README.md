@@ -13,8 +13,10 @@ available and provides sane fallbacks on systems that do not.
 ## FEATURES
 
  - Fast, constant-time spawn times across a variety of platforms.
- - Most of Ruby 1.9's `Process::spawn` interface under Ruby >= 1.8.7.
- - High level `POSIX::Spawn::Process` class for common IPC cases.
+ - A largish compatible subset of Ruby 1.9's `Process::spawn`
+   interface under Ruby >= 1.8.7.
+ - High level `POSIX::Spawn::Child` class for quick (but correct!)
+   non-streaming IPC cases.
 
 ## BENCHMARKS
 
@@ -42,14 +44,14 @@ the parent process.
 
 ## USAGE
 
-This library includes two distinct interfaces: a lower level process spawning
-function (`POSIX::Spawn::spawn`) based on Ruby 1.9's `Process::spawn`, and a
-high level class (`POSIX::Spawn::Process`) geared toward easy spawning of
-processes with simple string based standard input/output/error stream handling.
-The former is much more versatile, the latter requires much less code for
-certain common scenarios.
+This library includes two distinct interfaces: `POSIX::Spawn::spawn`, a lower
+level process spawning interface based on the `Process::spawn` include in Ruby
+1.9, and `POSIX::Spawn::Child`, a higher level class geared toward easy spawning
+of processes with simple string based standard input/output/error stream
+handling. The former is much more versatile, the latter requires much less
+code for certain common scenarios.
 
-### POSIX::Spawn
+### POSIX::Spawn::spawn
 
 The `POSIX::Spawn` module (with help from the accompanying C extension)
 implements a subset of the [Ruby 1.9 Process::spawn][ps] interface, largely
@@ -59,100 +61,67 @@ These are widely supported by various UNIX operating systems.
 [ps]: http://www.ruby-doc.org/core-1.9/classes/Process.html#M002230
 [po]: http://pubs.opengroup.org/onlinepubs/009695399/functions/posix_spawn.html
 
-In its simplest form, the `spawn` method can be used to execute a child process
-similar to `Kernel#system`.
+In its simplest form, the `POSIX::Spawn::spawn` method can be used to execute a
+child process similar to `Kernel#system`:
 
-    pid = POSIX::Spawn.spawn('echo', 'hello world')
-    status = Process.wait(pid)
+    pid  = POSIX::Spawn::spawn('echo', 'hello world')
+    stat = Process::waitpid(pid)
 
-The first line executes `echo(1)` with a single argument and returns the new
-process's `pid`. The second line waits for the process to complete and returns a
-`Process::Status` object. Note that `spawn` *does not* wait for the process to
-finish execution like `system` and does not reap the status -- you must call
-`Process::wait` (or equivalent) or the process will become a zombie.
+The first line executes `echo` with a single argument and immediately returns
+the new process's `pid`. The second line waits for the process to complete and
+returns a `Process::Status` object. Note that `spawn` *does not* wait for the
+process to finish execution like `system` and does not reap the child's exit
+status -- you must call `Process::waitpid` (or equivalent) or the process will
+become a zombie.
 
-The `spawn` method is actually capable of performing a variety of other tasks,
-from setting up the new process's environment to redirecting arbitrary file
-descriptors. The full method signature is something like this:
+The `spawn` method is capable of performing a large number of additional
+operations, from setting up the new process's environment, to changing the
+child's working directory, to redirecting arbitrary file descriptors.
 
-    spawn([env], cmdname, argv1, ..., [options])
+See the Ruby 1.9 [`Process::spawn` documentation][ps] for details and the
+`STATUS` section below for a full account of the various `Process::spawn`
+features supported by `POSIX::Spawn::spawn`.
 
-*NOTE: many of the following examples are taken directly from the Ruby 1.9
-[`Process::spawn`][ps] docs.*
+### `system`, `popen4`, and <code>`</code>
 
-If a hash is given in the first argument, `env`, the child process's environment
-becomes a merge of the parent's and any modifications specified in the hash.
-When a value in `env` is `nil`, the variable is deleted in the child:
+In addition to the `spawn` method, Ruby 1.9 compatible implementations of
+`Kernel#system` and <code>Kernel#`</code> are provided in the `POSIX::Spawn`
+module. The `popen4` method can be used to spawn a process with redirected
+stdin, stdout, and stderr objects.
 
-    # set FOO as BAR and unset BAZ.
-    pid = spawn({"FOO" => "BAR", "BAZ" => nil}, 'echo', 'hello world')
+### POSIX::Spawn as a Mixin
 
-If a hash is given as `options`, it specifies a current directory and zero or
-more fd redirects for the child process.
+The `POSIX::Spawn` module can also be mixed in to classes and modules to include
+`spawn` and all utility methods in that namespace:
 
-The `:chdir` key in options specifies the current directory:
+    class YourGreatClass
+      include POSIX::Spawn
 
-    pid = spawn(command, :chdir => "/var/tmp")
+      def speak(message)
+        pid = spawn('echo', message)
+        Process::waitpid(pid)
+      end
 
-The `:in`, `:out`, `:err`, a `Fixnum`, an `IO` object or an `Array` key
-specifies a redirection. For example, `stderr` can be merged into `stdout` as
-follows:
+      def calculate(expression)
+        pid, in, out, err = popen4('bc')
+        in.write(expression)
+        in.close
+        out.read
+      ensure
+        [in, out, err].each { |io| io.close if !io.closed? }
+        Process::waitpid(pid)
+      end
+    end
 
-    pid = spawn(command, :err => :out)
-    pid = spawn(command, 2 => 1)
-    pid = spawn(command, STDERR => :out)
-    pid = spawn(command, STDERR => STDOUT)
-
-The hash key is a fd in the child process started by `spawn` -- the standard
-error stream (`stderr`) in this case.
-
-The hash value is a fd in the parent process that calls `spawn` -- the standard
-output stream (`stdout`) in this case.
-
-The standard input stream (stdin) can be specified by `:in`, `0` and `STDIN`.
-
-You can also specify a filename:
-
-    pid = spawn(command, :in => "/dev/null")   # read mode
-    pid = spawn(command, :out => "/dev/null")  # write mode
-    pid = spawn(command, :err => "log")        # write mode
-    pid = spawn(command, 3 => "/dev/null")     # read mode
-
-When redirecting to `stdout` or `stderr`, the files are opened in write mode;
-otherwise, read mode is used.
-
-It's also possible to control the open flags and file permissions directly
-by passing an array value:
-
-    pid = spawn(command, :in=>["file"])       # read mode is assumed
-    pid = spawn(command, :in=>["file", "r"])
-    pid = spawn(command, :out=>["log", "w"])  # 0644 assumed
-    pid = spawn(command, :out=>["log", "w", 0600])
-    pid = spawn(command, :out=>["log", File::WRONLY|File::EXCL|File::CREAT, 0600])
-
-The array is a `[filename, open_mode, perms]` tuple. Flags can be a string or an
-integer. When flags is omitted or `nil`, `File::RDONLY` is assumed. The `perms`
-element should be an integer. When `perms` is omitted or `nil`, `0644` is
-assumed.
-
-Lastly, it's possible to direct an fd be closed in the child process.  This is
-important for implementing `popen`-style logic and other forms of IPC between
-processes using `IO.pipe`:
-
-    rd, wr = IO.pipe
-    pid = spawn('echo', 'hello world', rd => :close, :stdout => wr)
-    wr.close
-    output = rd.read
-    Process.wait(pid)
-
-See the `STATUS` section below for a full account of the various
-`Process::spawn` features supported (and unsupported) by `POSIX::Spawn::spawn`.
-
-### POSIX::Spawn::Process
+### POSIX::Spawn::Child
 
 [TODO]
 
 ## STATUS
+
+The `POSIX::Spawn::spawn` method is designed to be as compatible with Ruby 1.9's
+`Process::spawn` as possible. Right now, it is a compatible subset.  This
+section documents the arguments and options that are and are not supported.
 
 These `Process::spawn` arguments are currently supported:
 

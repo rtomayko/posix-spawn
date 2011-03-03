@@ -8,15 +8,16 @@
 [x] POSIX::Spawn::spawn usage examples in README
 [x] POSIX::Spawn#pspawn should be just #spawn
 [x] :err => :out case -- currently closing out after dup2'ing
-[ ] POSIX::Spawn::Process usage examples in README
-[ ] Better POSIX::Spawn#spawn comment docs
 [x] POSIX::Spawn::Process.new should have same method signature as Process::spawn
+[x] POSIX::Spawn::Process renamed to POSIX::Spawn::Child
+[ ] Better POSIX::Spawn#spawn comment docs
+[ ] POSIX::Spawn::Child usage examples in README
 
 
 [ ] popen* interfaces
 [x] system interface
 [x] ` interface
 [ ] jruby Grit::Process stuff
-[ ] make vfork an option
+[ ] make :vfork an option to Spawn#spawn
 [ ] check all posix_spawn_* function call return values
 [ ] POSIX::Spawn as ::Spawn? (maybe, we'll see)
