@@ -72,7 +72,7 @@ module POSIX
 
           # do the deed
           ::Kernel::exec(*argv)
-        rescue
+        ensure
           exit!(127)
         end
       end
