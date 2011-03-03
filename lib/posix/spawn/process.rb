@@ -58,7 +58,8 @@ module POSIX
       #
       # Returns a new Process instance that has already executed to completion.
       # The out, err, and status attributes are immediately available.
-      def initialize(argv, env={}, options={})
+      def initialize(*argv)
+        env, argv, options = extract_process_spawn_arguments(*argv)
         @argv = argv
         @env = env
 
@@ -92,12 +93,8 @@ module POSIX
       # Execute command, write input, and read output. This is called
       # immediately when a new instance of this object is initialized.
       def exec!
-        # when argv is a string, use /bin/sh to interpret command
-        argv = @argv
-        argv = ['/bin/sh', '-c', argv.to_str] if argv.respond_to?(:to_str)
-
         # spawn the process and hook up the pipes
-        pid, stdin, stdout, stderr = popen4(@env, *(argv + [@options]))
+        pid, stdin, stdout, stderr = popen4(@env, *(@argv + [@options]))
 
         # async read from all streams into buffers
         @out, @err = read_and_write(@input, stdin, stdout, stderr, @timeout, @max)

@@ -9,7 +9,7 @@ class ProcessTest < Test::Unit::TestCase
   end
 
   def test_argv_array_execs
-    p = Process.new(['printf', '%s %s %s', '1', '2', '3 4'])
+    p = Process.new('printf', '%s %s %s', '1', '2', '3 4')
     assert p.success?
     assert_equal "1 2 3 4", p.out
   end
@@ -21,7 +21,7 @@ class ProcessTest < Test::Unit::TestCase
   end
 
   def test_stdout
-    p = Process.new(['echo', 'boom'])
+    p = Process.new('echo', 'boom')
     assert_equal "boom\n", p.out
     assert_equal "", p.err
   end
@@ -39,48 +39,48 @@ class ProcessTest < Test::Unit::TestCase
   end
 
   def test_env
-    p = Process.new('echo $FOO', { 'FOO' => 'BOOYAH' })
+    p = Process.new({ 'FOO' => 'BOOYAH' }, 'echo $FOO')
     assert_equal "BOOYAH\n", p.out
   end
 
   def test_chdir
-    p = Process.new(["pwd"], {}, :chdir => File.dirname(Dir.pwd))
+    p = Process.new("pwd", :chdir => File.dirname(Dir.pwd))
     assert_equal File.dirname(Dir.pwd) + "\n", p.out
   end
 
   def test_input
     input = "HEY NOW\n" * 100_000 # 800K
-    p = Process.new(['wc', '-l'], {}, :input => input)
+    p = Process.new('wc', '-l', :input => input)
     assert_equal 100_000, p.out.strip.to_i
   end
 
   def test_max
     assert_raise Process::MaximumOutputExceeded do
-      Process.new(['yes'], {}, :max => 100_000)
+      Process.new('yes', :max => 100_000)
     end
   end
 
   def test_max_with_child_hierarchy
     assert_raise Process::MaximumOutputExceeded do
-      Process.new(['/bin/sh', '-c', 'yes'], {}, :max => 100_000)
+      Process.new('/bin/sh', '-c', 'yes', :max => 100_000)
     end
   end
 
   def test_max_with_stubborn_child
     assert_raise Process::MaximumOutputExceeded do
-      Process.new("trap '' TERM; yes", {}, :max => 100_000)
+      Process.new("trap '' TERM; yes", :max => 100_000)
     end
   end
 
   def test_timeout
     assert_raise Process::TimeoutExceeded do
-      Process.new(['sleep 1'], {}, :timeout => 0.05)
+      Process.new('sleep 1', :timeout => 0.05)
     end
   end
 
   def test_timeout_with_child_hierarchy
     assert_raise Process::TimeoutExceeded do
-      Process.new(['/bin/sh', '-c', 'yes'], {}, :timeout => 0.05)
+      Process.new('/bin/sh', '-c', 'yes', :timeout => 0.05)
     end
   end
 
@@ -93,7 +93,7 @@ class ProcessTest < Test::Unit::TestCase
         echo stuff on stderr 1>&2;
       done
     "
-    p = Process.new(['/bin/sh', '-c', command], {}, :input => input)
+    p = Process.new('/bin/sh', '-c', command, :input => input)
     assert_equal input.size, p.out.size
     assert_equal input.size, p.err.size
     assert p.success?
@@ -101,7 +101,7 @@ class ProcessTest < Test::Unit::TestCase
 
   def test_input_cannot_be_written_due_to_broken_pipe
     input = "1" * 100_000
-    p = Process.new(['false'], {}, :input => input)
+    p = Process.new('false', :input => input)
     assert !p.success?
   end
 end
