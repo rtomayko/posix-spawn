@@ -159,6 +159,7 @@ module POSIX
     # the POSIX::Spawn module documentation.
     def fspawn(*args)
       env, argv, options = extract_process_spawn_arguments(*args)
+
       if badopt = options.find{ |key,val| !fd?(key) && ![:chdir,:unsetenv_others].include?(key) }
         raise ArgumentError, "Invalid option: #{badopt[0].inspect}"
       elsif !argv.is_a?(Array) || !argv[0].is_a?(Array) || argv[0].size != 2
