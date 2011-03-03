@@ -220,7 +220,7 @@ These options are currently NOT supported:
 
 ## ACKNOWLEDGEMENTS
 
-Copyright (C) by
+Copyright (c) by
 [Ryan Tomayko](http://tomayko.com/about)
 and
 [Aman Gupta](https://github.com/tmm1).
