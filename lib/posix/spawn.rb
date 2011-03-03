@@ -1,6 +1,6 @@
 require 'posix_spawn_ext'
 require 'posix/spawn/version'
-require 'posix/spawn/process'
+require 'posix/spawn/child'
 
 module POSIX
   module Spawn

@@ -1,11 +1,11 @@
 module POSIX
   module Spawn
-    # POSIX::Spawn::Process includes logic for executing child processes and
+    # POSIX::Spawn::Child includes logic for executing child processes and
     # reading/writing from their standard input, output, and error streams.
     #
     # Create an run a process to completion:
     #
-    #   >> process = POSIX::Spawn::Process.new(['git', '--help'])
+    #   >> process = POSIX::Spawn::Child.new(['git', '--help'])
     #
     # Retrieve stdout or stderr output:
     #
@@ -19,7 +19,7 @@ module POSIX
     #   >> process.status
     #   => #<Process::Status: pid=80718,exited(0)>
     #
-    # POSIX::Spawn::Process is designed to take all input in a single string and
+    # POSIX::Spawn::Child is designed to take all input in a single string and
     # provides all output as single strings. It is therefore not well suited
     # to streaming large quantities of data in and out of commands.
     #
@@ -32,13 +32,13 @@ module POSIX
     #
     # - It's more portable than hand rolled pipe, fork, exec code because
     #   fork(2) and exec(2) aren't available on all platforms. In those cases,
-    #   POSIX::Spawn::Process falls back to using whatever janky substitutes the platform
+    #   POSIX::Spawn::Child falls back to using whatever janky substitutes the platform
     #   provides.
     #
     # - It handles all max pipe buffer hang cases, which is non trivial to
     #   implement correctly and must be accounted for with either popen3 or
     #   hand rolled fork/exec code.
-    class Process
+    class Child
       include POSIX::Spawn
 
       # Create and execute a new process.
@@ -56,7 +56,7 @@ module POSIX
       #           platforms:
       #             :chdir => str to start the process in different working dir.
       #
-      # Returns a new Process instance that has already executed to completion.
+      # Returns a new Child instance that has already executed to completion.
       # The out, err, and status attributes are immediately available.
       def initialize(*argv)
         env, argv, options = extract_process_spawn_arguments(*argv)
