@@ -164,6 +164,9 @@ These `Process::spawn` arguments are currently supported:
       cmdname, arg1, ...          : command name and one or more arguments (no shell)
       [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
     options: hash
+      clearing environment variables:
+        :unsetenv_others => true   : clear environment variables except specified by env
+        :unsetenv_others => false  : don't clear (default)
       redirection:
         key:
           FD              : single file descriptor in child process
@@ -187,9 +190,6 @@ These `Process::spawn` arguments are currently supported:
 These are currently NOT supported:
 
     options: hash
-      clearing environment variables:
-        :unsetenv_others => true   : clear environment variables except specified by env
-        :unsetenv_others => false  : don't clear (default)
       process group:
         :pgroup => true or 0 : make a new process group
         :pgroup => pgid      : join to specified process group

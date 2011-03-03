@@ -36,7 +36,7 @@ module POSIX
     # Returns the pid of the newly spawned process.
     def fspawn(*argv)
       env, argv, options = extract_process_spawn_arguments(*argv)
-      if badopt = options.find{ |key,val| !fd?(key) && ![:chdir].include?(key) }
+      if badopt = options.find{ |key,val| !fd?(key) && ![:chdir,:unsetenv_others].include?(key) }
         raise ArgumentError, "Invalid option: #{badopt[0].inspect}"
       end
 
@@ -64,6 +64,7 @@ module POSIX
           end
 
           # setup child environment
+          ENV.replace({}) if options[:unsetenv_others] == true
           env.each { |k, v| ENV[k] = v }
 
           # { :chdir => '/' } in options means change into that dir

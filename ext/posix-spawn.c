@@ -285,11 +285,16 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	char *cargv[argc + 1];
 	VALUE dirname;
 	VALUE cmdname;
+	VALUE unsetenv_others_p = Qfalse;
 	char *file;
 	char *cwd = NULL;
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
 	posix_spawnattr_t attr;
+
+	if (TYPE(options) == T_HASH) {
+		unsetenv_others_p = rb_hash_delete(options, ID2SYM(rb_intern("unsetenv_others")));
+	}
 
 	if (RTEST(env)) {
 		/*
@@ -301,10 +306,19 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 		rb_hash_foreach(env, each_env_check_i, 0);
 
 		if (RHASH_SIZE(env) > 0) {
-			char **curr = environ;
 			int size = 0;
+
+			char **curr = environ;
 			if (curr) {
 				while (*curr != NULL) ++curr, ++size;
+			}
+
+			if (unsetenv_others_p == Qtrue) {
+				/*
+				 * ignore the parent's environment by pretending it had
+				 * no entries. the loop below will do nothing.
+				 */
+				size = 0;
 			}
 
 			char **new_env = calloc(size+RHASH_SIZE(env)+1, sizeof(char*));

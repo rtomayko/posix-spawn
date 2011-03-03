@@ -28,6 +28,14 @@ module SpawnImplementationTests
     ENV.delete('PSPAWN')
   end
 
+  def test_spawn_clean_env
+    ENV['PSPAWN'] = 'parent'
+    pid = _spawn({'TEMP'=>'child'}, 'test -z "$PSPAWN" && test "$TEMP" = "child"', :unsetenv_others => true)
+    assert_process_exit_ok pid
+  ensure
+    ENV.delete('PSPAWN')
+  end
+
   def test_spawn_set_env
     ENV['PSPAWN'] = 'parent'
     pid = _spawn({'PSPAWN'=>'child'}, 'test "$PSPAWN" = "child"')
