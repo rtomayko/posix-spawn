@@ -273,7 +273,7 @@ module SpawnImplementationTests
       end
     end
 
-    assert_match /:oops/, exception.message
+    assert_match /oops/, exception.message
   end
 
   ##
