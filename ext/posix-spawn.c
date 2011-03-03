@@ -14,9 +14,13 @@
 
 #ifdef RUBY_VM
 #include <ruby/st.h>
+extern void rb_enable_interrupt(void);
+extern void rb_disable_interrupt(void);
 #else
 #include <node.h>
 #include <st.h>
+#define rb_enable_interrupt()
+#define rb_disable_interrupt()
 #endif
 
 #ifndef RARRAY_LEN
@@ -338,7 +342,9 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	}
 
 	if (RHASH_SIZE(options) == 0) {
+		rb_enable_interrupt();
 		ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
+		rb_disable_interrupt();
 		if (cwd) {
 			chdir(cwd);
 			free(cwd);
