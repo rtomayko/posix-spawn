@@ -17,7 +17,7 @@ class SystemTest < Test::Unit::TestCase
   end
 
   def test_system_nonzero_via_sh
-    ret = system("sh -c 'exit 1'")
+    ret = system("exit 1")
     assert_equal ret, false
     assert_equal $?.exitstatus, 1
   end
