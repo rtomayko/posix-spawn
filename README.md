@@ -10,13 +10,14 @@ The posix-spawn library aims to implement a subset of the Ruby 1.9 `Process::spa
 interface in a way that takes advantage of fast process spawning interfaces when
 available and provides sane fallbacks on systems that do not.
 
-## FEATURES
+### FEATURES
 
  - Fast, constant-time spawn times across a variety of platforms.
- - A largish compatible subset of Ruby 1.9's `Process::spawn`
-   interface under Ruby >= 1.8.7.
+ - A largish compatible subset of Ruby 1.9's `Process::spawn` interface and
+   enhanced versions of `Kernel#system`, <code>Kernel#`</code>, etc. under
+   Ruby >= 1.8.7 (currently MRI only).
  - High level `POSIX::Spawn::Child` class for quick (but correct!)
-   non-streaming IPC cases.
+   non-streaming IPC scenarios.
 
 ## BENCHMARKS
 
@@ -64,6 +65,7 @@ These are widely supported by various UNIX operating systems.
 In its simplest form, the `POSIX::Spawn::spawn` method can be used to execute a
 child process similar to `Kernel#system`:
 
+    require 'posix/spawn'
     pid  = POSIX::Spawn::spawn('echo', 'hello world')
     stat = Process::waitpid(pid)
 
@@ -94,6 +96,8 @@ stdin, stdout, and stderr objects.
 The `POSIX::Spawn` module can also be mixed in to classes and modules to include
 `spawn` and all utility methods in that namespace:
 
+    require 'posix/spawn'
+
     class YourGreatClass
       include POSIX::Spawn
 
@@ -115,13 +119,51 @@ The `POSIX::Spawn` module can also be mixed in to classes and modules to include
 
 ### POSIX::Spawn::Child
 
-[TODO]
+The `POSIX::Spawn::Child` class includes logic for executing child processes and
+reading/writing from their standard input, output, and error streams. It's
+designed to take all input in a single string and provides all output as single
+strings and is therefore not well-suited to streaming large quantities of data
+in and out of commands. That said, it has some benefits:
+
+ - **Simple** - requires little code for simple stream input and capture.
+ - **Internally non-blocking** (using `select(2)`) - handles all pipe hang cases
+   due to exceeding `PIPE_BUF` limits on one or more streams.
+ - **Potentially portable** - abstracts lower-level process and stream
+   management APIs so the class can be made to work on platforms like Java and
+   Windows where UNIX process spawning and stream APIs are not supported.
+
+`POSIX::Spawn::Child` takes the standard `spawn` arguments when instantiated,
+and runs the process to completion after writing all input and reading all
+output:
+
+    >> require 'posix/spawn'
+    >> child = POSIX::Spawn::Child.new('git', '--help')
+
+Retrieve process output written to stdout / stderr, or inspect the process's
+exit status:
+
+    >> child.out
+    => "usage: git [--version] [--exec-path[=GIT_EXEC_PATH]]\n ..."
+    >> child.err
+    => ""
+    >> child.status
+    => #<Process::Status: pid=80718,exited(0)>
+
+Use the `:input` option to write data on the new process's stdin immediately
+after spawning:
+
+    >> child = POSIX::Spawn::Child.new('bc', :input => '40 + 2')
+    >> child.out
+    "42\n"
+
+Additional options can be used to specify the maximum output size and time of
+execution before the child process is aborted. See the `POSIX::Spawn::Child`
+docs for more info.
 
 ## STATUS
 
 The `POSIX::Spawn::spawn` method is designed to be as compatible with Ruby 1.9's
-`Process::spawn` as possible. Right now, it is a compatible subset.  This
-section documents the arguments and options that are and are not supported.
+`Process::spawn` as possible. Right now, it is a compatible subset.
 
 These `Process::spawn` arguments are currently supported:
 
@@ -156,7 +198,7 @@ These `Process::spawn` arguments are currently supported:
       current directory:
         :chdir => str
 
-These are currently NOT supported:
+These options are currently NOT supported:
 
     options: hash
       process group:
@@ -177,6 +219,9 @@ These are currently NOT supported:
 
 ## ACKNOWLEDGEMENTS
 
-Copyright (C) by [Ryan Tomayko](http://tomayko.com/about) and [Aman Gupta](https://github.com/tmm1).
+Copyright (C) by
+[Ryan Tomayko](http://tomayko.com/about)
+and
+[Aman Gupta](https://github.com/tmm1).
 
 See the COPYING file for more information on license and redistribution.
