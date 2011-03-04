@@ -166,7 +166,7 @@ module POSIX
             rescue Errno::EPIPE => boom
             rescue Errno::EAGAIN, Errno::EINTR
             end
-            if boom || input.size == 0
+            if boom || input.nil? || input.size == 0
               stdin.close
               writers.delete(stdin)
             end
