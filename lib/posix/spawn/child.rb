@@ -1,9 +1,5 @@
 require 'posix/spawn'
 
-class String
-  alias bytesize size
-end unless ''.respond_to?(:bytesize)
-
 module POSIX
   module Spawn
     # POSIX::Spawn::Child includes logic for executing child processes and
@@ -145,22 +141,32 @@ module POSIX
       # Raises MaximumOutputExceeded when the total number of bytes output
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
-        if input
-          input = input.dup.force_encoding('BINARY') if input.respond_to?(:force_encoding)
-        else
-          stdin.close
-        end
-
         max = nil if max && max <= 0
         out, err = '', ''
         offset = 0
+
+        # force all string and IO encodings to BINARY under 1.9 for now
+        if out.respond_to?(:force_encoding)
+          [stdin, stdout, stderr].each do |fd|
+            fd.set_encoding('BINARY', 'BINARY')
+          end
+          out.force_encoding('BINARY')
+          err.force_encoding('BINARY')
+          input = input.dup.force_encoding('BINARY') if input
+        end
 
         timeout = nil if timeout && timeout <= 0.0
         @runtime = 0.0
         start = Time.now
 
-        writers = input ? [stdin] : []
         readers = [stdout, stderr]
+        writers =
+          if input
+            [stdin]
+          else
+            stdin.close
+            []
+          end
         t = timeout
         while readers.any? || writers.any?
           ready = IO.select(readers, writers, readers + writers, t)
@@ -171,11 +177,11 @@ module POSIX
             begin
               boom = nil
               size = fd.write_nonblock(input)
-              input = input[size, input.bytesize]
+              input = input[size, input.size]
             rescue Errno::EPIPE => boom
             rescue Errno::EAGAIN, Errno::EINTR
             end
-            if boom || input.bytesize == 0
+            if boom || input.size == 0
               stdin.close
               writers.delete(stdin)
             end
