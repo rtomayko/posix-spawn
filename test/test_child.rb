@@ -1,3 +1,5 @@
+# coding: UTF-8
+
 require 'test/unit'
 require 'posix-spawn'
 
@@ -103,5 +105,12 @@ class ChildTest < Test::Unit::TestCase
     input = "1" * 100_000
     p = Child.new('false', :input => input)
     assert !p.success?
+  end
+
+  def test_utf8_input
+    input = "hålø"
+    p = Child.new('cat', :input => input)
+    assert p.success?
+    assert_equal input, p.out
   end
 end

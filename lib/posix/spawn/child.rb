@@ -1,5 +1,9 @@
 require 'posix/spawn'
 
+class String
+  alias bytesize size
+end unless ''.respond_to?(:bytesize)
+
 module POSIX
   module Spawn
     # POSIX::Spawn::Child includes logic for executing child processes and
@@ -142,6 +146,7 @@ module POSIX
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
         input ||= ''
+        input.force_encoding('BINARY') if input.respond_to?(:force_encoding)
         max = nil if max && max <= 0
         out, err = '', ''
         offset = 0
@@ -162,11 +167,11 @@ module POSIX
             begin
               boom = nil
               size = fd.write_nonblock(input)
-              input = input[size, input.size]
+              input = input[size, input.bytesize]
             rescue Errno::EPIPE => boom
             rescue Errno::EAGAIN, Errno::EINTR
             end
-            if boom || input.size == 0
+            if boom || input.bytesize == 0
               stdin.close
               writers.delete(stdin)
             end
