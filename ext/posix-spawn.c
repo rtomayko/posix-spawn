@@ -17,7 +17,9 @@
 extern void rb_enable_interrupt(void);
 extern void rb_disable_interrupt(void);
 #else
+#ifndef RBX_CAPI_RUBY_H
 #include <node.h>
+#endif
 #include <st.h>
 #define rb_enable_interrupt()
 #define rb_disable_interrupt()
