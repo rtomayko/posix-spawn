@@ -111,6 +111,5 @@ class ChildTest < Test::Unit::TestCase
     input = "hålø"
     p = Child.new('cat', :input => input)
     assert p.success?
-    assert_equal input, p.out
   end
 end

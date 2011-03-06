@@ -145,8 +145,12 @@ module POSIX
       # Raises MaximumOutputExceeded when the total number of bytes output
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
-        input ||= ''
-        input.force_encoding('BINARY') if input.respond_to?(:force_encoding)
+        if input
+          input = input.dup.force_encoding('BINARY') if input.respond_to?(:force_encoding)
+        else
+          stdin.close
+        end
+
         max = nil if max && max <= 0
         out, err = '', ''
         offset = 0
@@ -155,7 +159,7 @@ module POSIX
         @runtime = 0.0
         start = Time.now
 
-        writers = [stdin]
+        writers = input ? [stdin] : []
         readers = [stdout, stderr]
         t = timeout
         while readers.any? || writers.any?
