@@ -146,7 +146,6 @@ module POSIX
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
         input ||= ''
-        input.force_encoding('BINARY') if input.respond_to?(:force_encoding)
         max = nil if max && max <= 0
         out, err = '', ''
         offset = 0
@@ -154,6 +153,12 @@ module POSIX
         timeout = nil if timeout && timeout <= 0.0
         @runtime = 0.0
         start = Time.now
+
+        if input.respond_to?(:force_encoding)
+          orig_encoding = input.encoding
+          input = input.dup.force_encoding('BINARY')
+          [ out, err ].each{ |str| str.force_encoding('BINARY') }
+        end
 
         writers = [stdin]
         readers = [stdout, stderr]
@@ -200,6 +205,11 @@ module POSIX
           if max && ready[0].any? && (out.size + err.size) > max
             raise MaximumOutputExceeded
           end
+        end
+
+        if orig_encoding
+          out.force_encoding(orig_encoding)
+          err.force_encoding(orig_encoding)
         end
 
         [out, err]
