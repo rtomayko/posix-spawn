@@ -112,6 +112,5 @@ class ChildTest < Test::Unit::TestCase
     p = Child.new('cat', :input => input)
     assert p.success?
     assert_equal input, p.out
-    assert_match input, p.out
   end
 end
