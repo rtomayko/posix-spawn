@@ -159,8 +159,9 @@ module POSIX
     # the POSIX::Spawn module documentation.
     def fspawn(*args)
       env, argv, options = extract_process_spawn_arguments(*args)
+      valid_options = [:chdir, :unsetenv_others, :pgroup]
 
-      if badopt = options.find{ |key,val| !fd?(key) && ![:chdir,:unsetenv_others].include?(key) }
+      if badopt = options.find{ |key,val| !fd?(key) && !valid_options.include?(key) }
         raise ArgumentError, "Invalid option: #{badopt[0].inspect}"
       elsif !argv.is_a?(Array) || !argv[0].is_a?(Array) || argv[0].size != 2
         raise ArgumentError, "Invalid command name"
@@ -195,6 +196,11 @@ module POSIX
 
           # { :chdir => '/' } in options means change into that dir
           ::Dir.chdir(options[:chdir]) if options[:chdir]
+
+          # { :pgroup => pgid } options
+          pgroup = options[:pgroup]
+          pgroup = 0 if pgroup == true
+          Process::setpgid(0, pgroup) if pgroup
 
           # do the deed
           ::Kernel::exec(*argv)
