@@ -270,6 +270,37 @@ module SpawnImplementationTests
   end
 
   ##
+  # :pgroup => <pgid>
+
+  def test_spawn_inherit_pgroup_from_parent_by_default
+    pgrp = Process.getpgrp
+    pid = _spawn("ruby", "-e", "exit(Process.getpgrp == #{pgrp} ? 0 : 1)")
+    assert_process_exit_ok pid
+  end
+
+  def test_spawn_inherit_pgroup_from_parent_when_nil
+    pgrp = Process.getpgrp
+    pid = _spawn("ruby", "-e", "exit(Process.getpgrp == #{pgrp} ? 0 : 1)", :pgroup => nil)
+    assert_process_exit_ok pid
+  end
+
+  def test_spawn_new_pgroup_with_true
+    pid = _spawn("ruby", "-e", "exit(Process.getpgrp == $$ ? 0 : 1)", :pgroup => true)
+    assert_process_exit_ok pid
+  end
+
+  def test_spawn_new_pgroup_with_zero
+    pid = _spawn("ruby", "-e", "exit(Process.getpgrp == $$ ? 0 : 1)", :pgroup => 0)
+    assert_process_exit_ok pid
+  end
+
+  def test_spawn_explicit_pgroup
+    pgrp = Process.getpgrp
+    pid = _spawn("ruby", "-e", "exit(Process.getpgrp == #{pgrp} ? 0 : 1)", :pgroup => pgrp)
+    assert_process_exit_ok pid
+  end
+
+  ##
   # Exceptions
 
   def test_spawn_raises_exception_on_unsupported_options

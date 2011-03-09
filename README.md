@@ -179,6 +179,12 @@ These `Process::spawn` arguments are currently supported to any of
       clearing environment variables:
         :unsetenv_others => true   : clear environment variables except specified by env
         :unsetenv_others => false  : don't clear (default)
+      current directory:
+        :chdir => str
+      process group:
+        :pgroup => true or 0 : make a new process group
+        :pgroup => pgid      : join to specified process group
+        :pgroup => nil       : don't change the process group (default)
       redirection:
         key:
           FD              : single file descriptor in child process
@@ -196,16 +202,10 @@ These `Process::spawn` arguments are currently supported to any of
           :err    : the file descriptor 2 which is the standard error
           integer : the file descriptor of specified the integer
           io      : the file descriptor specified as io.fileno
-      current directory:
-        :chdir => str
 
 These options are currently NOT supported:
 
     options: hash
-      process group:
-        :pgroup => true or 0 : make a new process group
-        :pgroup => pgid      : join to specified process group
-        :pgroup => nil       : don't change the process group (default)
       resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
         :rlimit_resourcename => limit
         :rlimit_resourcename => [cur_limit, max_limit]

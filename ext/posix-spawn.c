@@ -208,6 +208,42 @@ posixspawn_file_actions_init(posix_spawn_file_actions_t *fops, VALUE options)
 	rb_hash_foreach(options, posixspawn_file_actions_operations_iter, (VALUE)fops);
 }
 
+/*
+ * Initialize pgroup related flags in the posix_spawnattr struct based on the
+ * options Hash.
+ *
+ *   :pgroup => 0 | true - spawned process is in a new process group with the
+ *                         same id as the new process's pid.
+ *   :pgroup => pgid     - spawned process is in a new process group with id
+ *                         pgid.
+ *   :pgroup => nil      - spawned process has the same pgid as the parent
+ *                         process (this is the default).
+ *
+ * The options Hash is modified in place with the :pgroup key being removed.
+ */
+static void
+posixspawn_set_pgroup(VALUE options, posix_spawnattr_t *pattr, short *pflags)
+{
+	VALUE pgroup_val;
+	pgroup_val = rb_hash_delete(options, ID2SYM(rb_intern("pgroup")));
+
+	switch (TYPE(pgroup_val)) {
+		case T_TRUE:
+			(*pflags) |= POSIX_SPAWN_SETPGROUP;
+			posix_spawnattr_setpgroup(pattr, 0);
+			break;
+		case T_FIXNUM:
+			(*pflags) |= POSIX_SPAWN_SETPGROUP;
+			posix_spawnattr_setpgroup(pattr, FIX2INT(pgroup_val));
+			break;
+		case T_NIL:
+			break;
+		default:
+			rb_raise(rb_eTypeError, ":pgroup option is invalid");
+			break;
+	}
+}
+
 static int
 each_env_check_i(VALUE key, VALUE val, VALUE arg)
 {
@@ -366,6 +402,10 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	 */
 	flags |= POSIX_SPAWN_USEVFORK;
 #endif
+
+	/* setup pgroup options */
+	posixspawn_set_pgroup(options, &attr, &flags);
+
 	posix_spawnattr_setflags(&attr, flags);
 
 	if (RTEST(dirname = rb_hash_delete(options, ID2SYM(rb_intern("chdir"))))) {
