@@ -5,6 +5,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <spawn.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,15 +15,11 @@
 
 #ifdef RUBY_VM
 #include <ruby/st.h>
-extern void rb_enable_interrupt(void);
-extern void rb_disable_interrupt(void);
 #else
 #ifndef RBX_CAPI_RUBY_H
 #include <node.h>
 #endif
 #include <st.h>
-#define rb_enable_interrupt()
-#define rb_disable_interrupt()
 #endif
 
 #ifndef RARRAY_LEN
@@ -291,6 +288,8 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	pid_t pid;
 	posix_spawn_file_actions_t fops;
 	posix_spawnattr_t attr;
+	sigset_t mask;
+	short flags = 0;
 
 	/* argv is a [[cmdname, argv0], argv1, argvN, ...] array. */
 	if (TYPE(argv) != T_ARRAY ||
@@ -349,14 +348,25 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	}
 
 	posixspawn_file_actions_init(&fops, options);
-
 	posix_spawnattr_init(&attr);
+
+	/* child does not block any signals */
+	flags |= POSIX_SPAWN_SETSIGMASK;
+	sigemptyset(&mask);
+	posix_spawnattr_setsigmask(&attr, &mask);
+
+	/* child uses default signal handlers for all signals */
+	flags |= POSIX_SPAWN_SETSIGDEF;
+	sigfillset(&mask);
+	posix_spawnattr_setsigdefault(&attr, &mask);
+
 #if defined(POSIX_SPAWN_USEVFORK) || defined(__linux__)
 	/* Force USEVFORK on linux. If this is undefined, it's probably because
 	 * you forgot to define _GNU_SOURCE at the top of this file.
 	 */
-	posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
+	flags |= POSIX_SPAWN_USEVFORK;
 #endif
+	posix_spawnattr_setflags(&attr, flags);
 
 	if (RTEST(dirname = rb_hash_delete(options, ID2SYM(rb_intern("chdir"))))) {
 		char *new_cwd = StringValuePtr(dirname);
@@ -365,9 +375,7 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	}
 
 	if (RHASH_SIZE(options) == 0) {
-		rb_enable_interrupt();
 		ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
-		rb_disable_interrupt();
 		if (cwd) {
 			chdir(cwd);
 			free(cwd);
