@@ -170,7 +170,7 @@ module POSIX
       fork do
         begin
           # handle FD => {FD, :close, [file,mode,perms]} options
-          options.map do |key, val|
+          options.each do |key, val|
             if fd?(key)
               key = fd_to_io(key)
 
