@@ -155,7 +155,7 @@ module SpawnImplementationTests
   end
 
   def test_spawn_redirect_invalid_fds_raises_exception
-    pid = _spawn("echo", "hiya", 250 => 3)
+    pid = _spawn("echo", "hiya", 1 => 250)
     assert_process_exit_status pid, 127
   rescue Errno::EBADF
     # this happens on darwin only. GNU does spawn and exits 127.
