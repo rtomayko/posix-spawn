@@ -16,9 +16,6 @@
 #ifdef RUBY_VM
 #include <ruby/st.h>
 #else
-#ifndef RBX_CAPI_RUBY_H
-#include <node.h>
-#endif
 #include <st.h>
 #endif
 
