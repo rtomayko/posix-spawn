@@ -388,11 +388,6 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	sigemptyset(&mask);
 	posix_spawnattr_setsigmask(&attr, &mask);
 
-	/* child uses default signal handlers for all signals */
-	flags |= POSIX_SPAWN_SETSIGDEF;
-	sigfillset(&mask);
-	posix_spawnattr_setsigdefault(&attr, &mask);
-
 #if defined(POSIX_SPAWN_USEVFORK) || defined(__linux__)
 	/* Force USEVFORK on linux. If this is undefined, it's probably because
 	 * you forgot to define _GNU_SOURCE at the top of this file.
