@@ -75,9 +75,11 @@ class ChildTest < Test::Unit::TestCase
   end
 
   def test_timeout
+    start = Time.now
     assert_raise TimeoutExceeded do
       Child.new('sleep', '1', :timeout => 0.05)
     end
+    assert (Time.now-start) <= 0.2
   end
 
   def test_timeout_with_child_hierarchy
