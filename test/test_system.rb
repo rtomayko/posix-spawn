@@ -6,24 +6,24 @@ class SystemTest < Test::Unit::TestCase
 
   def test_system
     ret = system("true")
-    assert_equal ret, true
-    assert_equal $?.exitstatus, 0
+    assert_equal true, ret
+    assert_equal 0, $?.exitstatus
   end
 
   def test_system_nonzero
     ret = system("false")
-    assert_equal ret, false
-    assert_equal $?.exitstatus, 1
+    assert_equal false, ret
+    assert_equal 1, $?.exitstatus
   end
 
   def test_system_nonzero_via_sh
     ret = system("exit 1")
-    assert_equal ret, false
-    assert_equal $?.exitstatus, 1
+    assert_equal false, ret
+    assert_equal 1, $?.exitstatus
   end
 
   def test_system_failure
     ret = system("nosuch")
-    assert_equal ret, false
+    assert_equal false, ret
   end
 end

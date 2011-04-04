@@ -10,8 +10,8 @@ class PopenTest < Test::Unit::TestCase
     i.close
     ::Process.wait(pid)
 
-    assert_equal o.read, "hello world"
-    assert_equal $?.exitstatus, 0
+    assert_equal "hello world", o.read
+    assert_equal 0, $?.exitstatus
   ensure
     [i, o, e].each{ |io| io.close rescue nil }
   end
