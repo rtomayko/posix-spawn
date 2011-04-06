@@ -69,14 +69,22 @@ posixspawn_obj_to_fd(VALUE obj)
 
 		case T_FILE:
 			/* IO object */
-			fd = FIX2INT(rb_funcall(obj, rb_intern("fileno"), 0));
+			if (rb_respond_to(obj, rb_intern("posix_fileno"))) {
+				fd = FIX2INT(rb_funcall(obj, rb_intern("posix_fileno"), 0));
+			} else {
+				fd = FIX2INT(rb_funcall(obj, rb_intern("fileno"), 0));
+			}
 			break;
 
 		case T_OBJECT:
 			/* some other object */
 			if (rb_respond_to(obj, rb_intern("to_io"))) {
 				obj = rb_funcall(obj, rb_intern("to_io"), 0);
-				fd = FIX2INT(rb_funcall(obj, rb_intern("fileno"), 0));
+				if (rb_respond_to(obj, rb_intern("posix_fileno"))) {
+					fd = FIX2INT(rb_funcall(obj, rb_intern("posix_fileno"), 0));
+				} else {
+					fd = FIX2INT(rb_funcall(obj, rb_intern("fileno"), 0));
+				}
 			}
 			break;
 	}

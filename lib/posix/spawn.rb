@@ -2,6 +2,26 @@ require 'posix_spawn_ext'
 require 'posix/spawn/version'
 require 'posix/spawn/child'
 
+class IO
+  if defined? JRUBY_VERSION
+    require 'jruby'
+    def posix_fileno
+      case self
+      when STDIN, $stdin
+        0
+      when STDOUT, $stdout
+        1
+      when STDERR, $stderr
+        2
+      else
+        JRuby.reference(self).getOpenFile.getMainStream.getDescriptor.getChannel.getFDVal
+      end
+    end
+  else
+    alias :posix_fileno :fileno
+  end
+end
+
 module POSIX
   # The POSIX::Spawn module implements a compatible subset of Ruby 1.9's
   # Process::spawn and related methods using the IEEE Std 1003.1 posix_spawn(2)
@@ -151,6 +171,16 @@ module POSIX
     def pspawn(*args)
       env, argv, options = extract_process_spawn_arguments(*args)
       raise NotImplementedError unless respond_to?(:_pspawn)
+
+      if defined? JRUBY_VERSION
+        # On the JVM, changes made to the environment are not propagated down
+        # to C via get/setenv, so we have to fake it here.
+        unless options[:unsetenv_others] == true
+          env = ENV.merge(env)
+          options[:unsetenv_others] = true
+        end
+      end
+
       _pspawn(env, argv, options)
     end
 

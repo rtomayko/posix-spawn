@@ -68,7 +68,7 @@ module SpawnImplementationTests
 
   def test_sanity_of_checking_clone_with_sh
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.to_i} || exit 1", rd => rd)
+    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd => rd)
     assert_process_exit_status pid, 0
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
@@ -94,7 +94,7 @@ module SpawnImplementationTests
 
   def test_spawn_close_option_with_fd_number
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.to_i} || exit 1", rd.to_i => :close)
+    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd.posix_fileno => :close)
     assert_process_exit_status pid, 1
 
     assert !rd.closed?
@@ -105,7 +105,7 @@ module SpawnImplementationTests
 
   def test_spawn_close_option_with_io_object
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.to_i} || exit 1", rd => :close)
+    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd => :close)
     assert_process_exit_status pid, 1
 
     assert !rd.closed?
@@ -123,7 +123,7 @@ module SpawnImplementationTests
 
   def test_spawn_closing_multiple_fds_with_array_keys
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 101>&#{wr.to_i} || exit 1", [rd, wr, :out] => :close)
+    pid = _spawn("exec 2>/dev/null 101>&#{wr.posix_fileno} || exit 1", [rd, wr, :out] => :close)
     assert_process_exit_status pid, 1
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
@@ -145,7 +145,7 @@ module SpawnImplementationTests
 
   def test_spawn_redirect_fds_with_fd_numbers
     rd, wr = IO.pipe
-    pid = _spawn("echo", "hello world", 1 => wr.fileno, rd.fileno => :close)
+    pid = _spawn("echo", "hello world", 1 => wr.posix_fileno, rd.posix_fileno => :close)
     wr.close
     output = rd.read
     assert_process_exit_ok pid
@@ -181,7 +181,7 @@ module SpawnImplementationTests
   # have to pass it explicitly as fd => fd.
   def test_explicitly_passing_an_fd_as_open
     rd, wr = IO.pipe
-    pid = _spawn("exec 101>&#{wr.to_i} || exit 1", wr => wr)
+    pid = _spawn("exec 101>&#{wr.posix_fileno} || exit 1", wr => wr)
     assert_process_exit_ok pid
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
