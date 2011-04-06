@@ -151,11 +151,6 @@ module POSIX
     def pspawn(*args)
       env, argv, options = extract_process_spawn_arguments(*args)
       raise NotImplementedError unless respond_to?(:_pspawn)
-
-      if defined? JRUBY_VERSION and options.find{ |k,v| fd?(k) or fd?(v) }
-        raise NotImplementedError, "io redirection not supported under JRuby"
-      end
-
       _pspawn(env, argv, options)
     end
 

@@ -374,12 +374,10 @@ class PosixSpawnTest < Test::Unit::TestCase
   end
 end
 
-unless defined?(JRUBY_VERSION)
-  class ForkSpawnTest < Test::Unit::TestCase
-    include SpawnImplementationTests
-    def _spawn(*argv)
-      POSIX::Spawn.fspawn(*argv)
-    end
+class ForkSpawnTest < Test::Unit::TestCase
+  include SpawnImplementationTests
+  def _spawn(*argv)
+    POSIX::Spawn.fspawn(*argv)
   end
 end
 
