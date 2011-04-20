@@ -1,4 +1,7 @@
-require 'posix_spawn_ext'
+unless RUBY_PLATFORM =~ /(mswin|mingw|bccwin)/
+  require 'posix_spawn_ext'
+end
+
 require 'posix/spawn/version'
 require 'posix/spawn/child'
 
