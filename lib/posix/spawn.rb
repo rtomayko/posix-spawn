@@ -501,7 +501,7 @@ module POSIX
         [['/bin/sh', '/bin/sh'], '-c', args[0]]
       elsif !args[0].respond_to?(:to_ary)
         # [argv0, argv1, ...]
-        [[args[0], args[0]], *args[1..-1]]
+        [[args[0], args[0]], *(args[1..-1].flatten.collect { |arg| arg.to_s })]
       else
         # [[cmdname, argv0], argv1, ...]
         args
