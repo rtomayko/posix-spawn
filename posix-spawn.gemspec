@@ -8,7 +8,6 @@ Gem::Specification.new do |s|
   s.description = 'posix-spawn uses posix_spawnp(2) for faster process spawning'
 
   s.homepage = 'http://github.com/rtomayko/posix-spawn'
-  s.has_rdoc = false
 
   s.authors = ['Ryan Tomayko', 'Aman Gupta']
   s.email = ['r@tomayko.com', 'aman@tmm1.net']
