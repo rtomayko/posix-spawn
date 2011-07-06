@@ -77,6 +77,7 @@ module POSIX
         @timeout = @options.delete(:timeout)
         @max = @options.delete(:max)
         @options.delete(:chdir) if @options[:chdir].nil?
+        @status = nil
         exec!
       end
 
