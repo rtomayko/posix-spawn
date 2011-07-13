@@ -285,7 +285,7 @@ module POSIX
     # the spawning process. Supports the standard spawn interface as described
     # in the POSIX::Spawn module documentation.
     #
-    # Returns a [pid, stdin, stderr, stdout] tuple, where pid is the new
+    # Returns a [pid, stdin, stdout, stderr] tuple, where pid is the new
     # process's pid, stdin is a writeable IO object, and stdout / stderr are
     # readable IO objects. The caller should take care to close all IO objects
     # when finished and the child process's status must be collected by a call
