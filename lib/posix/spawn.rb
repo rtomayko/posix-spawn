@@ -1,4 +1,4 @@
-unless RUBY_PLATFORM =~ /(mswin|mingw|bccwin)/
+unless RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
   require 'posix_spawn_ext'
 end
 
