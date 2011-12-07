@@ -3,7 +3,7 @@ require 'mkmf'
 # warnings save lives
 $CFLAGS << " -Wall "
 
-if RUBY_PLATFORM =~ /(mswin|mingw|bccwin)/
+if RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
   File.open('Makefile','w'){|f| f.puts "default: \ninstall: " }
 else
   create_makefile('posix_spawn_ext')
