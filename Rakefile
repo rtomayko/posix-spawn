@@ -6,8 +6,8 @@ task :default => :test
 
 GEMSPEC = eval(File.read('posix-spawn.gemspec'))
 
-require 'rake/gempackagetask'
-Rake::GemPackageTask.new(GEMSPEC) do |pkg|
+require 'rubygems/package_task'
+Gem::PackageTask.new(GEMSPEC) do |pkg|
 end
 
 # ==========================================================
