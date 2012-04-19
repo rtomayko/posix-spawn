@@ -112,8 +112,18 @@ module POSIX
       rescue Object => boom
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
         if @status.nil?
-          ::Process.kill('TERM', pid) rescue nil
-          @status = waitpid(pid)      rescue nil
+          ['TERM', 'KILL'].each do |signal|
+            ::Process.kill(signal, pid) rescue nil
+
+            # wait 1s for the process to respond
+            20.times do
+              @status = waitpid(pid, ::Process::WNOHANG) rescue nil
+              break if @status
+              sleep(0.05) rescue nil
+            end
+
+            break if @status
+          end
         end
         raise
       ensure
@@ -218,9 +228,8 @@ module POSIX
       # Wait for the child process to exit
       #
       # Returns the Process::Status object obtained by reaping the process.
-      def waitpid(pid)
-        ::Process::waitpid(pid)
-        $?
+      def waitpid(pid, flags = 0)
+        $? if ::Process::waitpid(pid, flags)
       end
     end
   end
