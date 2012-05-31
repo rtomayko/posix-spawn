@@ -1,5 +1,3 @@
-require 'posix/spawn'
-
 module POSIX
   module Spawn
     # POSIX::Spawn::Child includes logic for executing child processes and
@@ -77,6 +75,7 @@ module POSIX
         @timeout = @options.delete(:timeout)
         @max = @options.delete(:max)
         @options.delete(:chdir) if @options[:chdir].nil?
+        @status = nil
         exec!
       end
 
