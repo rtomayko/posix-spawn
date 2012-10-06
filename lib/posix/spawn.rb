@@ -1,4 +1,6 @@
-unless RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
+require 'posix/spawn/util'
+
+unless POSIX::Spawn::Util.win?
   require 'posix_spawn_ext'
 end
 
@@ -139,6 +141,7 @@ module POSIX
   #     with Ruby >= 1.8.7.
   #
   module Spawn
+    include POSIX::Spawn::Util
     extend self
 
     # Spawn a child process with a variety of options using the best
@@ -267,7 +270,7 @@ module POSIX
     # Returns the String output of the command.
     def `(cmd)
       r, w = IO.pipe
-      pid = spawn(['/bin/sh', '/bin/sh'], '-c', cmd, :out => w, r => :close)
+      pid = spawn([bin_sh, bin_sh], '-c', cmd, :out => w, r => :close)
 
       if pid > 0
         w.close
@@ -498,7 +501,7 @@ module POSIX
     def adjust_process_spawn_argv(args)
       if args.size == 1 && args[0] =~ /[ |>]/
         # single string with these characters means run it through the shell
-        [['/bin/sh', '/bin/sh'], '-c', args[0]]
+        [[self.bin_sh, self.bin_sh], '-c', args[0]]
       elsif !args[0].respond_to?(:to_ary)
         # [argv0, argv1, ...]
         [[args[0], args[0]], *args[1..-1]]

@@ -49,6 +49,7 @@ module POSIX
     #   the platform provides.
     class Child
       include POSIX::Spawn
+      include POSIX::Spawn::Util
 
       # Spawn a new process, write all input and read all output, and wait for
       # the program to exit. Supports the standard spawn interface as described
