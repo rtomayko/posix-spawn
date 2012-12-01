@@ -1,7 +1,6 @@
 # coding: UTF-8
 
-require 'test/unit'
-require 'posix-spawn'
+require File.expand_path('../helper', __FILE__)
 
 class ChildTest < Test::Unit::TestCase
   include POSIX::Spawn
