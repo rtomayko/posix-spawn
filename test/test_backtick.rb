@@ -1,8 +1,8 @@
-require 'test/unit'
-require 'posix-spawn'
+require File.expand_path('../helper', __FILE__)
 
 class BacktickTest < Test::Unit::TestCase
   include POSIX::Spawn
+  include POSIX::Spawn::Util
 
   def test_backtick_simple
     out = `exit`
@@ -17,14 +17,14 @@ class BacktickTest < Test::Unit::TestCase
   end
 
   def test_backtick_failure
-    out = `nosuchcmd 2> /dev/null`
+    out = `nosuchcmd 2> #{null}`
     assert_equal '', out
     assert_equal 127, $?.exitstatus
   end
 
   def test_backtick_redirect
     out = `nosuchcmd 2>&1`
-    assert_equal "/bin/sh: nosuchcmd: command not found\n", out
+    assert_equal "#{bin_sh}: nosuchcmd: command not found\n", out
     assert_equal 127, $?.exitstatus, 127
   end
 

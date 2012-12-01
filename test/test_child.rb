@@ -1,10 +1,10 @@
 # coding: UTF-8
 
-require 'test/unit'
-require 'posix-spawn'
+require File.expand_path('../helper', __FILE__)
 
 class ChildTest < Test::Unit::TestCase
   include POSIX::Spawn
+  include POSIX::Spawn::Util
 
   def test_sanity
     assert_same POSIX::Spawn::Child, Child
@@ -24,7 +24,7 @@ class ChildTest < Test::Unit::TestCase
 
   def test_stdout
     p = Child.new('echo', 'boom')
-    assert_equal "boom\n", p.out
+    assert_equal "boom", p.out.strip
     assert_equal "", p.err
   end
 
@@ -46,8 +46,8 @@ class ChildTest < Test::Unit::TestCase
   end
 
   def test_chdir
-    p = Child.new("pwd", :chdir => File.dirname(Dir.pwd))
-    assert_equal File.dirname(Dir.pwd) + "\n", p.out
+    p = Child.new('ruby -e "puts Dir.pwd"', :chdir => File.dirname(Dir.pwd))
+    assert_equal File.dirname(Dir.pwd), p.out.strip
   end
 
   def test_input
@@ -64,7 +64,7 @@ class ChildTest < Test::Unit::TestCase
 
   def test_max_with_child_hierarchy
     assert_raise MaximumOutputExceeded do
-      Child.new('/bin/sh', '-c', 'yes', :max => 100_000)
+      Child.new(bin_sh, '-c', 'yes', :max => 100_000)
     end
   end
 
@@ -84,7 +84,7 @@ class ChildTest < Test::Unit::TestCase
 
   def test_timeout_with_child_hierarchy
     assert_raise TimeoutExceeded do
-      Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05)
+      Child.new(bin_sh, '-c', 'sleep 1', :timeout => 0.05)
     end
   end
 

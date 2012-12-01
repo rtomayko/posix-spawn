@@ -1,7 +1,8 @@
-require 'test/unit'
-require 'posix-spawn'
+require File.expand_path('../helper', __FILE__)
 
 module SpawnImplementationTests
+  include POSIX::Spawn::Util
+
   def test_spawn_simple
     pid = _spawn('true')
     assert_process_exit_ok pid
@@ -68,33 +69,33 @@ module SpawnImplementationTests
 
   def test_sanity_of_checking_clone_with_sh
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd => rd)
+    pid = _spawn("exec 2>#{null} 100<&#{rd.posix_fileno} || exit 1", rd => rd)
     assert_process_exit_status pid, 0
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
   end
 
   def test_spawn_close_option_with_symbolic_standard_stream_names
-    pid = _spawn('exec 2>/dev/null 100<&0 || exit 1', :in => :close)
+    pid = _spawn("exec 2>#{null} 100<&0 || exit 1", :in => :close)
     assert_process_exit_status pid, 1
 
-    pid = _spawn('exec 2>/dev/null 101>&1 102>&2 || exit 1',
+    pid = _spawn("exec 2>#{null} 101>&1 102>&2 || exit 1",
                  :out => :close, :err => :close)
     assert_process_exit_status pid, 1
   end
 
   def test_spawn_close_on_standard_stream_io_object
-    pid = _spawn('exec 2>/dev/null 100<&0 || exit 1', STDIN => :close)
+    pid = _spawn("exec 2>#{null} 100<&0 || exit 1", STDIN => :close)
     assert_process_exit_status pid, 1
 
-    pid = _spawn('exec 2>/dev/null 101>&1 102>&2 || exit 1',
+    pid = _spawn("exec 2>#{null} 101>&1 102>&2 || exit 1",
                  STDOUT => :close, STDOUT => :close)
     assert_process_exit_status pid, 1
   end
 
   def test_spawn_close_option_with_fd_number
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd.posix_fileno => :close)
+    pid = _spawn("exec 2>#{null} 100<&#{rd.posix_fileno} || exit 1", rd.posix_fileno => :close)
     assert_process_exit_status pid, 1
 
     assert !rd.closed?
@@ -105,7 +106,7 @@ module SpawnImplementationTests
 
   def test_spawn_close_option_with_io_object
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd => :close)
+    pid = _spawn("exec 2>#{null} 100<&#{rd.posix_fileno} || exit 1", rd => :close)
     assert_process_exit_status pid, 1
 
     assert !rd.closed?
@@ -123,7 +124,7 @@ module SpawnImplementationTests
 
   def test_spawn_closing_multiple_fds_with_array_keys
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 101>&#{wr.posix_fileno} || exit 1", [rd, wr, :out] => :close)
+    pid = _spawn("exec 2>#{null} 101>&#{wr.posix_fileno} || exit 1", [rd, wr, :out] => :close)
     assert_process_exit_status pid, 1
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
@@ -138,7 +139,7 @@ module SpawnImplementationTests
     wr.close
     output = rd.read
     assert_process_exit_ok pid
-    assert_equal "hello world\n", output
+    assert_match "hello world", output
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
   end
@@ -149,7 +150,7 @@ module SpawnImplementationTests
     wr.close
     output = rd.read
     assert_process_exit_ok pid
-    assert_equal "hello world\n", output
+    assert_match "hello world", output
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
   end
@@ -308,7 +309,7 @@ module SpawnImplementationTests
 
     assert_raise ArgumentError do
       begin
-        _spawn('echo howdy', :out => '/dev/null', :oops => 'blaahh')
+        _spawn('echo howdy', :out => null, :oops => 'blaahh')
       rescue Exception => e
         exception = e
         raise e
@@ -335,6 +336,7 @@ end
 
 class SpawnTest < Test::Unit::TestCase
   include POSIX::Spawn
+  include POSIX::Spawn::Util
 
   def test_spawn_methods_exposed_at_module_level
     assert POSIX::Spawn.respond_to?(:pspawn)
@@ -357,7 +359,7 @@ class SpawnTest < Test::Unit::TestCase
   end
 
   def test_extract_process_spawn_arguments_with_shell_command
-    assert_equal [{}, [['/bin/sh', '/bin/sh'], '-c', 'echo hello world'], {}],
+    assert_equal [{}, [[bin_sh, bin_sh], '-c', 'echo hello world'], {}],
       extract_process_spawn_arguments('echo hello world')
   end
 

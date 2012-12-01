@@ -28,9 +28,13 @@ require 'rake/testtask'
 Rake::TestTask.new 'test' do |t|
   t.test_files = FileList['test/test_*.rb']
 end
-task :test => :build
 
 desc 'Run some benchmarks'
-task :benchmark => :build do
+task :benchmark do
   ruby '-Ilib', 'bin/posix-spawn-benchmark'
+end
+
+unless RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
+  task :test => :build
+  task :benchmark => :build
 end
