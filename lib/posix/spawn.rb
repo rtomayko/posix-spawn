@@ -267,7 +267,12 @@ module POSIX
     # Returns the String output of the command.
     def `(cmd)
       r, w = IO.pipe
-      pid = spawn(['/bin/sh', '/bin/sh'], '-c', cmd, :out => w, r => :close)
+      if RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
+        sh = ENV['COMSPEC'] || 'cmd.exe'
+        pid = spawn([sh, sh], '/c', cmd, :out => w, r => :close)
+      else
+        pid = spawn(['/bin/sh', '/bin/sh'], '-c', cmd, :out => w, r => :close)
+      end
 
       if pid > 0
         w.close
