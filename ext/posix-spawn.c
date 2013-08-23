@@ -438,8 +438,10 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	}
 
 	if (ret != 0) {
+		char error_context[PATH_MAX+32];
+		snprintf(error_context, sizeof(error_context), "when spawning '%s'", file);
 		errno = ret;
-		rb_sys_fail("posix_spawnp");
+		rb_sys_fail(error_context);
 	}
 
 	return INT2FIX(pid);
