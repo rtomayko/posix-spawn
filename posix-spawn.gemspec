@@ -13,6 +13,7 @@ Gem::Specification.new do |s|
   s.email = ['r@tomayko.com', 'aman@tmm1.net']
 
   s.add_development_dependency 'rake-compiler', '0.7.6'
+  s.add_development_dependency 'pry'
 
   s.extensions = ['ext/extconf.rb']
   s.executables << 'posix-spawn-benchmark'

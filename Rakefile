@@ -28,7 +28,7 @@ require 'rake/testtask'
 Rake::TestTask.new 'test' do |t|
   t.test_files = FileList['test/test_*.rb']
 end
-task :test => :build
+task :test => :build unless RUBY_PLATFORM == 'java'
 
 desc 'Run some benchmarks'
 task :benchmark => :build do

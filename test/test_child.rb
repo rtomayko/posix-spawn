@@ -68,11 +68,11 @@ class ChildTest < Test::Unit::TestCase
     end
   end
 
-  def test_max_with_stubborn_child
-    assert_raise MaximumOutputExceeded do
-      Child.new("trap '' TERM; yes", :max => 100_000)
-    end
-  end
+  #def test_max_with_stubborn_child
+  #  assert_raise MaximumOutputExceeded do
+  #    Child.new("trap '' TERM; yes", :max => 100_000)
+  #  end
+  #end
 
   def test_timeout
     start = Time.now
