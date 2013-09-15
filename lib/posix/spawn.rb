@@ -1,9 +1,5 @@
-if RUBY_PLATFORM == 'java'
-  require 'posix/spawn/j_ruby_process_builder_wrapper'
-else
-  unless RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
-    require 'posix_spawn_ext'
-  end
+unless RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin|java)/
+  require 'posix_spawn_ext'
 end
 
 require 'posix/spawn/version'
@@ -143,6 +139,8 @@ module POSIX
   #     with Ruby >= 1.8.7.
   #
   module Spawn
+    require 'posix/spawn/j_ruby_process_builder_wrapper' if RUBY_PLATFORM == 'java'
+
     extend self
 
     # Spawn a child process with a variety of options using the best
