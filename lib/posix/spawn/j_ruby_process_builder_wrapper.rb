@@ -53,12 +53,21 @@ end
 
 class POSIX::Spawn::JRubyProcessBuilderWrapper
   def self.spawn(*args)
+    # unsupported options:
+    # :pgroup
+    # :new_pgroup
+    # :rlimit_*
+    # :umask
+
+    # IO redirection except for :in, :out, :err
+    # :close_others
     env = args[0].kind_of?(Hash) ? args.shift : {}
     options = args[-1].kind_of?(Hash) ? args.pop : {}
     wrapper = self.new(*args)
     if chdir = options.delete(:chdir)
       wrapper.directory = chdir
     end
+    env.clear if options[:unsetenv_others]
     env.each_pair { |k, v| wrapper.environment.put(k.to_s, v.to_s) }
 
     # options
