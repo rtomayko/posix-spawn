@@ -139,7 +139,7 @@ module POSIX
   #     with Ruby >= 1.8.7.
   #
   module Spawn
-    require 'posix/spawn/j_ruby_process_builder_wrapper' if RUBY_PLATFORM == 'java'
+    require 'posix/spawn/jruby' if RUBY_PLATFORM == 'java'
 
     extend self
 
@@ -159,7 +159,7 @@ module POSIX
     # Raises any number of Errno:: exceptions on failure.
     def spawn(*args)
       if RUBY_PLATFORM == 'java'
-        ::POSIX::Spawn::JRubyProcessBuilderWrapper::spawn(*args)
+        ::POSIX::Spawn::JRuby::spawn(*args)
       elsif respond_to?(:_pspawn)
         pspawn(*args)
       elsif ::Process.respond_to?(:spawn)
