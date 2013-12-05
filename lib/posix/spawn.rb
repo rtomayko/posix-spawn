@@ -314,7 +314,7 @@ module POSIX
       [pid, iwr, ord, erd]
     ensure
       # we're in the parent, close child-side fds
-      [ird, owr, ewr].each { |fd| fd.close }
+      [ird, owr, ewr].each { |fd| fd.close if fd }
     end
 
     ##
