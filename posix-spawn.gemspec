@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.summary = 'posix_spawnp(2) for ruby'
   s.description = 'posix-spawn uses posix_spawnp(2) for faster process spawning'
 
-  s.homepage = 'http://github.com/rtomayko/posix-spawn'
+  s.homepage = 'https://github.com/rtomayko/posix-spawn'
 
   s.authors = ['Ryan Tomayko', 'Aman Gupta']
   s.email = ['r@tomayko.com', 'aman@tmm1.net']
