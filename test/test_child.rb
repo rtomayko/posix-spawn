@@ -74,6 +74,24 @@ class ChildTest < Test::Unit::TestCase
     end
   end
 
+  def test_max_with_partial_output
+    p = Child.new('yes', :max => 100_000, :defer => true)
+    assert_nil p.out
+    assert_raise MaximumOutputExceeded do
+      p.exec!
+    end
+    assert_equal "y\n" * 50_000, p.out
+  end
+
+  def test_max_with_partial_output_long_lines
+    p = Child.new('yes', "nice to meet you", :max => 10_000, :defer => true)
+    assert_raise MaximumOutputExceeded do
+      p.exec!
+    end
+    expected = ("nice to meet you\n" * 600).slice(0, 10_000)
+    assert_equal expected, p.out
+  end
+
   def test_timeout
     start = Time.now
     assert_raise TimeoutExceeded do
@@ -86,6 +104,16 @@ class ChildTest < Test::Unit::TestCase
     assert_raise TimeoutExceeded do
       Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05)
     end
+  end
+
+  def test_timeout_with_partial_output
+    start = Time.now
+    p = Child.new('echo Hello; sleep 1', :timeout => 0.05, :defer => true)
+    assert_raise TimeoutExceeded do
+      p.exec!
+    end
+    assert (Time.now-start) <= 0.2
+    assert_equal "Hello\n", p.out
   end
 
   def test_lots_of_input_and_lots_of_output_at_the_same_time

@@ -66,6 +66,7 @@ module POSIX
       #   :max     => total    Maximum number of bytes of output to allow the
       #                        process to generate before aborting with a
       #                        MaximumOutputExceeded exception.
+      #   :defer   => boolean  If true, do not exec! immediately
       #
       # Returns a new Child instance whose underlying process has already
       # executed to completion. The out, err, and status attributes are
@@ -77,7 +78,7 @@ module POSIX
         @timeout = @options.delete(:timeout)
         @max = @options.delete(:max)
         @options.delete(:chdir) if @options[:chdir].nil?
-        exec!
+        exec! if !@options.delete(:defer)
       end
 
       # All data written to the child process's stdout stream as a String.
@@ -97,9 +98,9 @@ module POSIX
         @status && @status.success?
       end
 
-    private
       # Execute command, write input, and read output. This is called
-      # immediately when a new instance of this object is initialized.
+      # immediately when a new instance of this object is initialized
+      # if the :defer option is not used
       def exec!
         # spawn the process and hook up the pipes
         pid, stdin, stdout, stderr = popen4(@env, *(@argv + [@options]))
@@ -120,6 +121,8 @@ module POSIX
         # let's be absolutely certain these are closed
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
       end
+
+    private
 
       # Maximum buffer size for reading
       BUFSIZE = (32 * 1024)
@@ -142,7 +145,7 @@ module POSIX
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
         max = nil if max && max <= 0
-        out, err = '', ''
+        @out, @err = '', ''
         offset = 0
 
         # force all string and IO encodings to BINARY under 1.9 for now
@@ -150,8 +153,8 @@ module POSIX
           [stdin, stdout, stderr].each do |fd|
             fd.set_encoding('BINARY', 'BINARY')
           end
-          out.force_encoding('BINARY')
-          err.force_encoding('BINARY')
+          @out.force_encoding('BINARY')
+          @err.force_encoding('BINARY')
           input = input.dup.force_encoding('BINARY') if input
         end
 
@@ -189,7 +192,7 @@ module POSIX
 
           # read from stdout and stderr streams
           ready[0].each do |fd|
-            buf = (fd == stdout) ? out : err
+            buf = (fd == stdout) ? @out : @err
             begin
               buf << fd.readpartial(BUFSIZE)
             rescue Errno::EAGAIN, Errno::EINTR
@@ -207,12 +210,14 @@ module POSIX
           end
 
           # maybe we've hit our max output
-          if max && ready[0].any? && (out.size + err.size) > max
+          if max && ready[0].any? && (@out.size + @err.size) > max
+            @out.slice!(max .. -1)
+            @err.slice!(max - @out.length .. -1)
             raise MaximumOutputExceeded
           end
         end
 
-        [out, err]
+        [@out, @err]
       end
 
       # Wait for the child process to exit
