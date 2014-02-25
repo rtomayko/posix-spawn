@@ -141,7 +141,7 @@ module POSIX
         pid, stdin, stdout, stderr = popen4(@env, *(@argv + [@options]))
 
         # async read from all streams into buffers
-        @out, @err = read_and_write(@input, stdin, stdout, stderr, @timeout, @max)
+        read_and_write(@input, stdin, stdout, stderr, @timeout, @max)
 
         # grab exit status
         @status = waitpid(pid)
@@ -245,8 +245,6 @@ module POSIX
 
           # maybe we've hit our max output
           if max && ready[0].any? && (@out.size + @err.size) > max
-            @out.slice!(max .. -1)
-            @err.slice!(max - @out.length .. -1)
             raise MaximumOutputExceeded
           end
         end

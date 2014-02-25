@@ -80,7 +80,7 @@ class ChildTest < Test::Unit::TestCase
     assert_raise MaximumOutputExceeded do
       p.exec!
     end
-    assert_equal "y\n" * 50_000, p.out
+    assert_output_exceeds_repeated_string("y\n", 100_000, p.out)
   end
 
   def test_max_with_partial_output_long_lines
@@ -88,8 +88,7 @@ class ChildTest < Test::Unit::TestCase
     assert_raise MaximumOutputExceeded do
       p.exec!
     end
-    expected = ("nice to meet you\n" * 600).slice(0, 10_000)
-    assert_equal expected, p.out
+    assert_output_exceeds_repeated_string("nice to meet you\n", 10_000, p.out)
   end
 
   def test_timeout
@@ -141,5 +140,15 @@ class ChildTest < Test::Unit::TestCase
     input = "hålø"
     p = Child.new('cat', :input => input)
     assert p.success?
+  end
+
+  ##
+  # Assertion Helpers
+
+  def assert_output_exceeds_repeated_string(str, len, actual)
+    assert_operator actual.length, :>=, len
+
+    expected = (str * (len / str.length + 1)).slice(0, len)
+    assert_equal expected, actual.slice(0, len)
   end
 end
