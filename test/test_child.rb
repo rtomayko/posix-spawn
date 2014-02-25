@@ -75,7 +75,7 @@ class ChildTest < Test::Unit::TestCase
   end
 
   def test_max_with_partial_output
-    p = Child.new('yes', :max => 100_000, :defer => true)
+    p = Child.prepare('yes', :max => 100_000)
     assert_nil p.out
     assert_raise MaximumOutputExceeded do
       p.exec!
@@ -84,7 +84,7 @@ class ChildTest < Test::Unit::TestCase
   end
 
   def test_max_with_partial_output_long_lines
-    p = Child.new('yes', "nice to meet you", :max => 10_000, :defer => true)
+    p = Child.prepare('yes', "nice to meet you", :max => 10_000)
     assert_raise MaximumOutputExceeded do
       p.exec!
     end
@@ -108,7 +108,7 @@ class ChildTest < Test::Unit::TestCase
 
   def test_timeout_with_partial_output
     start = Time.now
-    p = Child.new('echo Hello; sleep 1', :timeout => 0.05, :defer => true)
+    p = Child.prepare('echo Hello; sleep 1', :timeout => 0.05)
     assert_raise TimeoutExceeded do
       p.exec!
     end

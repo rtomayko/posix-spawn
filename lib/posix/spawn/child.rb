@@ -30,6 +30,17 @@ module POSIX
     #   >> child.out
     #   "42\n"
     #
+    # To access output from the new process even if an exception was raised:
+    #
+    #   >> child = POSIX::Spawn::Child.prepare('git', 'log', :max => 1000)
+    #   >> begin
+    #   ?>   child.exec!
+    #   ?> rescue POSIX::Spawn::MaximumOutputExceeded
+    #   ?>   # just so you know
+    #   ?> end
+    #   >> child.out
+    #   "... first 1000 characters of log output ..."
+    #
     # Q: Why use POSIX::Spawn::Child instead of popen3, hand rolled fork/exec
     # code, or Process::spawn?
     #
@@ -66,19 +77,33 @@ module POSIX
       #   :max     => total    Maximum number of bytes of output to allow the
       #                        process to generate before aborting with a
       #                        MaximumOutputExceeded exception.
-      #   :defer   => boolean  If true, do not exec! immediately
       #
       # Returns a new Child instance whose underlying process has already
       # executed to completion. The out, err, and status attributes are
       # immediately available.
       def initialize(*args)
-        @env, @argv, options = extract_process_spawn_arguments(*args)
-        @options = options.dup
-        @input = @options.delete(:input)
-        @timeout = @options.delete(:timeout)
-        @max = @options.delete(:max)
-        @options.delete(:chdir) if @options[:chdir].nil?
-        exec! if !@options.delete(:defer)
+        process_args(*args)
+        exec!
+      end
+
+      # Prepare a new process to spawn, but do not actually spawn it.
+      #
+      # Invoke this just like the normal constructor to set up a process
+      # to be run.  Call `exec!` to actually run the child process, send
+      # the input, read the output, and wait for completion.  Use this
+      # alternative way of constructing a POSIX::Spawn::Child if you want
+      # to read any partial output from the child process even after an
+      # exception.
+      #
+      #   POSIX::Spawn::Child.prepare([env], command, [argv1, ...], [options])
+      #
+      # The options are the same as the regular constructor.
+      #
+      # Returns a new Child instance but does not run the underlying process.
+      def self.prepare(*args)
+        obj = allocate
+        obj.send(:process_args, *args)
+        obj
       end
 
       # All data written to the child process's stdout stream as a String.
@@ -226,6 +251,18 @@ module POSIX
       def waitpid(pid)
         ::Process::waitpid(pid)
         $?
+      end
+
+      # Process constructor arguments
+      #
+      # Extract and process constructor arguments and options hash
+      def process_args(*args)
+        @env, @argv, options = extract_process_spawn_arguments(*args)
+        @options = options.dup
+        @input = @options.delete(:input)
+        @timeout = @options.delete(:timeout)
+        @max = @options.delete(:max)
+        @options.delete(:chdir) if @options[:chdir].nil?
       end
     end
   end
