@@ -30,9 +30,9 @@ module POSIX
     #   >> child.out
     #   "42\n"
     #
-    # To access output from the new process even if an exception was raised:
+    # To access output from the process even if an exception was raised:
     #
-    #   >> child = POSIX::Spawn::Child.prepare('git', 'log', :max => 1000)
+    #   >> child = POSIX::Spawn::Child.build('git', 'log', :max => 1000)
     #   >> begin
     #   ?>   child.exec!
     #   ?> rescue POSIX::Spawn::MaximumOutputExceeded
