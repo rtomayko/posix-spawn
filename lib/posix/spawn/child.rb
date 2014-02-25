@@ -82,11 +82,16 @@ module POSIX
       # executed to completion. The out, err, and status attributes are
       # immediately available.
       def initialize(*args)
-        process_args(*args)
-        exec!
+        @env, @argv, options = extract_process_spawn_arguments(*args)
+        @options = options.dup
+        @input = @options.delete(:input)
+        @timeout = @options.delete(:timeout)
+        @max = @options.delete(:max)
+        @options.delete(:chdir) if @options[:chdir].nil?
+        exec! if !@options.delete(:noexec)
       end
 
-      # Prepare a new process to spawn, but do not actually spawn it.
+      # Set up a new process to spawn, but do not actually spawn it.
       #
       # Invoke this just like the normal constructor to set up a process
       # to be run.  Call `exec!` to actually run the child process, send
@@ -95,15 +100,20 @@ module POSIX
       # to read any partial output from the child process even after an
       # exception.
       #
-      #   POSIX::Spawn::Child.prepare([env], command, [argv1, ...], [options])
+      #   child = POSIX::Spawn::Child.build(... arguments ...)
+      #   child.exec!
       #
-      # The options are the same as the regular constructor.
+      # The arguments are the same as the regular constructor.
       #
       # Returns a new Child instance but does not run the underlying process.
-      def self.prepare(*args)
-        obj = allocate
-        obj.send(:process_args, *args)
-        obj
+      def self.build(*args)
+        options =
+          if args[-1].respond_to?(:to_hash)
+            args.pop.to_hash
+          else
+            {}
+          end
+        new(*args, { :noexec => true }.merge(options))
       end
 
       # All data written to the child process's stdout stream as a String.
@@ -125,7 +135,7 @@ module POSIX
 
       # Execute command, write input, and read output. This is called
       # immediately when a new instance of this object is created, or
-      # can be called explicitly when creating the Child via `prepare`.
+      # can be called explicitly when creating the Child via `build`.
       def exec!
         # spawn the process and hook up the pipes
         pid, stdin, stdout, stderr = popen4(@env, *(@argv + [@options]))
@@ -148,7 +158,6 @@ module POSIX
       end
 
     private
-
       # Maximum buffer size for reading
       BUFSIZE = (32 * 1024)
 
@@ -251,18 +260,6 @@ module POSIX
       def waitpid(pid)
         ::Process::waitpid(pid)
         $?
-      end
-
-      # Process constructor arguments
-      #
-      # Extract and process constructor arguments and options hash
-      def process_args(*args)
-        @env, @argv, options = extract_process_spawn_arguments(*args)
-        @options = options.dup
-        @input = @options.delete(:input)
-        @timeout = @options.delete(:timeout)
-        @max = @options.delete(:max)
-        @options.delete(:chdir) if @options[:chdir].nil?
       end
     end
   end
