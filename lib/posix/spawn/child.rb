@@ -124,8 +124,8 @@ module POSIX
       end
 
       # Execute command, write input, and read output. This is called
-      # immediately when a new instance of this object is initialized
-      # if the :defer option is not used
+      # immediately when a new instance of this object is created, or
+      # can be called explicitly when creating the Child via `prepare`.
       def exec!
         # spawn the process and hook up the pipes
         pid, stdin, stdout, stderr = popen4(@env, *(@argv + [@options]))
