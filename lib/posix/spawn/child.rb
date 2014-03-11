@@ -204,12 +204,7 @@ module POSIX
             stdin.close
             []
           end
-        tail_bytes =
-          if input.respond_to?(:byteslice)
-            lambda { |str,len| str.byteslice(len..-1) }
-          else
-            lambda { |str,len| str[len..-1] }
-          end
+        slice_method = input.respond_to?(:byteslice) ? :byteslice : :slice
         t = timeout
 
         while readers.any? || writers.any?
@@ -221,7 +216,7 @@ module POSIX
             begin
               boom = nil
               size = fd.write_nonblock(input)
-              input = tail_bytes.call(input, size)
+              input = input.send(slice_method, size..-1)
             rescue Errno::EPIPE => boom
             rescue Errno::EAGAIN, Errno::EINTR
             end
