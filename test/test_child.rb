@@ -142,6 +142,12 @@ class ChildTest < Test::Unit::TestCase
     assert p.success?
   end
 
+  def test_utf8_input_long
+    input = "hålø" * 10_000
+    p = Child.new('cat', :input => input)
+    assert p.success?
+  end
+
   ##
   # Assertion Helpers
 
