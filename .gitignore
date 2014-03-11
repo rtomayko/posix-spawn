@@ -3,3 +3,4 @@ ext/Makefile
 lib/posix_spawn_ext.*
 tmp
 pkg
+.bundle
