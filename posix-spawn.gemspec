@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.license = 'MIT'
 
   s.add_development_dependency 'rake-compiler', '0.7.6'
-  s.add_development_dependency 'minitest', '>= 5'
+  s.add_development_dependency 'minitest', '>= 4'
 
   s.extensions = ['ext/extconf.rb']
   s.executables << 'posix-spawn-benchmark'
