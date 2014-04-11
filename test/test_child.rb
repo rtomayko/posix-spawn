@@ -1,7 +1,6 @@
 # coding: UTF-8
 
-require 'minitest/autorun'
-require 'posix-spawn'
+require 'test_helper'
 
 class ChildTest < Minitest::Test
   include POSIX::Spawn

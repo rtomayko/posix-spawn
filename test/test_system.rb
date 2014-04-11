@@ -1,5 +1,4 @@
-require 'minitest/autorun'
-require 'posix-spawn'
+require 'test_helper'
 
 class SystemTest < Minitest::Test
   include POSIX::Spawn
