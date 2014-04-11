@@ -1,7 +1,7 @@
-require 'test/unit'
+require 'minitest/autorun'
 require 'posix-spawn'
 
-class BacktickTest < Test::Unit::TestCase
+class BacktickTest < Minitest::Test
   include POSIX::Spawn
 
   def test_backtick_simple

@@ -1,9 +1,9 @@
 # coding: UTF-8
 
-require 'test/unit'
+require 'minitest/autorun'
 require 'posix-spawn'
 
-class ChildTest < Test::Unit::TestCase
+class ChildTest < Minitest::Test
   include POSIX::Spawn
 
   def test_sanity
@@ -57,19 +57,19 @@ class ChildTest < Test::Unit::TestCase
   end
 
   def test_max
-    assert_raise MaximumOutputExceeded do
+    assert_raises MaximumOutputExceeded do
       Child.new('yes', :max => 100_000)
     end
   end
 
   def test_max_with_child_hierarchy
-    assert_raise MaximumOutputExceeded do
+    assert_raises MaximumOutputExceeded do
       Child.new('/bin/sh', '-c', 'yes', :max => 100_000)
     end
   end
 
   def test_max_with_stubborn_child
-    assert_raise MaximumOutputExceeded do
+    assert_raises MaximumOutputExceeded do
       Child.new("trap '' TERM; yes", :max => 100_000)
     end
   end
@@ -77,7 +77,7 @@ class ChildTest < Test::Unit::TestCase
   def test_max_with_partial_output
     p = Child.build('yes', :max => 100_000)
     assert_nil p.out
-    assert_raise MaximumOutputExceeded do
+    assert_raises MaximumOutputExceeded do
       p.exec!
     end
     assert_output_exceeds_repeated_string("y\n", 100_000, p.out)
@@ -85,7 +85,7 @@ class ChildTest < Test::Unit::TestCase
 
   def test_max_with_partial_output_long_lines
     p = Child.build('yes', "nice to meet you", :max => 10_000)
-    assert_raise MaximumOutputExceeded do
+    assert_raises MaximumOutputExceeded do
       p.exec!
     end
     assert_output_exceeds_repeated_string("nice to meet you\n", 10_000, p.out)
@@ -93,14 +93,14 @@ class ChildTest < Test::Unit::TestCase
 
   def test_timeout
     start = Time.now
-    assert_raise TimeoutExceeded do
+    assert_raises TimeoutExceeded do
       Child.new('sleep', '1', :timeout => 0.05)
     end
     assert (Time.now-start) <= 0.2
   end
 
   def test_timeout_with_child_hierarchy
-    assert_raise TimeoutExceeded do
+    assert_raises TimeoutExceeded do
       Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05)
     end
   end
@@ -108,7 +108,7 @@ class ChildTest < Test::Unit::TestCase
   def test_timeout_with_partial_output
     start = Time.now
     p = Child.build('echo Hello; sleep 1', :timeout => 0.05)
-    assert_raise TimeoutExceeded do
+    assert_raises TimeoutExceeded do
       p.exec!
     end
     assert (Time.now-start) <= 0.2

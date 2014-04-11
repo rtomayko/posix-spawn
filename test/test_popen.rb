@@ -1,7 +1,7 @@
-require 'test/unit'
+require 'minitest/autorun'
 require 'posix-spawn'
 
-class PopenTest < Test::Unit::TestCase
+class PopenTest < Minitest::Test
   include POSIX::Spawn
 
   def test_popen4

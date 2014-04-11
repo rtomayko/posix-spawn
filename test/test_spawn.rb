@@ -1,4 +1,4 @@
-require 'test/unit'
+require 'minitest/autorun'
 require 'posix-spawn'
 
 module SpawnImplementationTests
@@ -23,7 +23,7 @@ module SpawnImplementationTests
   end
 
   def test_spawn_with_invalid_argv
-    assert_raise ArgumentError do
+    assert_raises ArgumentError do
       _spawn(['echo','b','c','d'])
     end
   end
@@ -314,7 +314,7 @@ module SpawnImplementationTests
   def test_spawn_raises_exception_on_unsupported_options
     exception = nil
 
-    assert_raise ArgumentError do
+    assert_raises ArgumentError do
       begin
         _spawn('echo howdy', :out => '/dev/null', :oops => 'blaahh')
       rescue Exception => e
@@ -341,7 +341,7 @@ module SpawnImplementationTests
   end
 end
 
-class SpawnTest < Test::Unit::TestCase
+class SpawnTest < Minitest::Test
   include POSIX::Spawn
 
   def test_spawn_methods_exposed_at_module_level
@@ -375,14 +375,14 @@ class SpawnTest < Test::Unit::TestCase
   end
 end
 
-class PosixSpawnTest < Test::Unit::TestCase
+class PosixSpawnTest < Minitest::Test
   include SpawnImplementationTests
   def _spawn(*argv)
     POSIX::Spawn.pspawn(*argv)
   end
 end
 
-class ForkSpawnTest < Test::Unit::TestCase
+class ForkSpawnTest < Minitest::Test
   include SpawnImplementationTests
   def _spawn(*argv)
     POSIX::Spawn.fspawn(*argv)
@@ -390,7 +390,7 @@ class ForkSpawnTest < Test::Unit::TestCase
 end
 
 if ::Process::respond_to?(:spawn)
-  class NativeSpawnTest < Test::Unit::TestCase
+  class NativeSpawnTest < Minitest::Test
     include SpawnImplementationTests
     def _spawn(*argv)
       ::Process.spawn(*argv)
