@@ -396,9 +396,9 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	sigemptyset(&mask);
 	posix_spawnattr_setsigmask(&attr, &mask);
 
-#if defined(POSIX_SPAWN_USEVFORK) || defined(__linux__)
-	/* Force USEVFORK on linux. If this is undefined, it's probably because
-	 * you forgot to define _GNU_SOURCE at the top of this file.
+#if defined(POSIX_SPAWN_USEVFORK) || defined(__GLIBC__)
+	/* Force USEVFORK on GNU libc. If this is undefined, it's probably
+	 * because you forgot to define _GNU_SOURCE at the top of this file.
 	 */
 	flags |= POSIX_SPAWN_USEVFORK;
 #endif
