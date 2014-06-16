@@ -74,6 +74,23 @@ class ChildTest < Test::Unit::TestCase
     end
   end
 
+  def test_max_with_partial_output
+    p = Child.build('yes', :max => 100_000)
+    assert_nil p.out
+    assert_raise MaximumOutputExceeded do
+      p.exec!
+    end
+    assert_output_exceeds_repeated_string("y\n", 100_000, p.out)
+  end
+
+  def test_max_with_partial_output_long_lines
+    p = Child.build('yes', "nice to meet you", :max => 10_000)
+    assert_raise MaximumOutputExceeded do
+      p.exec!
+    end
+    assert_output_exceeds_repeated_string("nice to meet you\n", 10_000, p.out)
+  end
+
   def test_timeout
     start = Time.now
     assert_raise TimeoutExceeded do
@@ -86,6 +103,16 @@ class ChildTest < Test::Unit::TestCase
     assert_raise TimeoutExceeded do
       Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05)
     end
+  end
+
+  def test_timeout_with_partial_output
+    start = Time.now
+    p = Child.build('echo Hello; sleep 1', :timeout => 0.05)
+    assert_raise TimeoutExceeded do
+      p.exec!
+    end
+    assert (Time.now-start) <= 0.2
+    assert_equal "Hello\n", p.out
   end
 
   def test_lots_of_input_and_lots_of_output_at_the_same_time
@@ -113,5 +140,21 @@ class ChildTest < Test::Unit::TestCase
     input = "hålø"
     p = Child.new('cat', :input => input)
     assert p.success?
+  end
+
+  def test_utf8_input_long
+    input = "hålø" * 10_000
+    p = Child.new('cat', :input => input)
+    assert p.success?
+  end
+
+  ##
+  # Assertion Helpers
+
+  def assert_output_exceeds_repeated_string(str, len, actual)
+    assert_operator actual.length, :>=, len
+
+    expected = (str * (len / str.length + 1)).slice(0, len)
+    assert_equal expected, actual.slice(0, len)
   end
 end

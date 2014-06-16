@@ -1,6 +1,6 @@
 /* we want GNU extensions like POSIX_SPAWN_USEVFORK */
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#define _GNU_SOURCE 1
 #endif
 
 #include <errno.h>

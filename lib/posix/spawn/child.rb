@@ -30,6 +30,17 @@ module POSIX
     #   >> child.out
     #   "42\n"
     #
+    # To access output from the process even if an exception was raised:
+    #
+    #   >> child = POSIX::Spawn::Child.build('git', 'log', :max => 1000)
+    #   >> begin
+    #   ?>   child.exec!
+    #   ?> rescue POSIX::Spawn::MaximumOutputExceeded
+    #   ?>   # just so you know
+    #   ?> end
+    #   >> child.out
+    #   "... first 1000 characters of log output ..."
+    #
     # Q: Why use POSIX::Spawn::Child instead of popen3, hand rolled fork/exec
     # code, or Process::spawn?
     #
@@ -77,7 +88,32 @@ module POSIX
         @timeout = @options.delete(:timeout)
         @max = @options.delete(:max)
         @options.delete(:chdir) if @options[:chdir].nil?
-        exec!
+        exec! if !@options.delete(:noexec)
+      end
+
+      # Set up a new process to spawn, but do not actually spawn it.
+      #
+      # Invoke this just like the normal constructor to set up a process
+      # to be run.  Call `exec!` to actually run the child process, send
+      # the input, read the output, and wait for completion.  Use this
+      # alternative way of constructing a POSIX::Spawn::Child if you want
+      # to read any partial output from the child process even after an
+      # exception.
+      #
+      #   child = POSIX::Spawn::Child.build(... arguments ...)
+      #   child.exec!
+      #
+      # The arguments are the same as the regular constructor.
+      #
+      # Returns a new Child instance but does not run the underlying process.
+      def self.build(*args)
+        options =
+          if args[-1].respond_to?(:to_hash)
+            args.pop.to_hash
+          else
+            {}
+          end
+        new(*args, { :noexec => true }.merge(options))
       end
 
       # All data written to the child process's stdout stream as a String.
@@ -97,15 +133,15 @@ module POSIX
         @status && @status.success?
       end
 
-    private
       # Execute command, write input, and read output. This is called
-      # immediately when a new instance of this object is initialized.
+      # immediately when a new instance of this object is created, or
+      # can be called explicitly when creating the Child via `build`.
       def exec!
         # spawn the process and hook up the pipes
         pid, stdin, stdout, stderr = popen4(@env, *(@argv + [@options]))
 
         # async read from all streams into buffers
-        @out, @err = read_and_write(@input, stdin, stdout, stderr, @timeout, @max)
+        read_and_write(@input, stdin, stdout, stderr, @timeout, @max)
 
         # grab exit status
         @status = waitpid(pid)
@@ -121,6 +157,7 @@ module POSIX
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
       end
 
+    private
       # Maximum buffer size for reading
       BUFSIZE = (32 * 1024)
 
@@ -142,16 +179,16 @@ module POSIX
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
         max = nil if max && max <= 0
-        out, err = '', ''
+        @out, @err = '', ''
         offset = 0
 
         # force all string and IO encodings to BINARY under 1.9 for now
-        if out.respond_to?(:force_encoding) and stdin.respond_to?(:set_encoding)
+        if @out.respond_to?(:force_encoding) and stdin.respond_to?(:set_encoding)
           [stdin, stdout, stderr].each do |fd|
             fd.set_encoding('BINARY', 'BINARY')
           end
-          out.force_encoding('BINARY')
-          err.force_encoding('BINARY')
+          @out.force_encoding('BINARY')
+          @err.force_encoding('BINARY')
           input = input.dup.force_encoding('BINARY') if input
         end
 
@@ -167,7 +204,9 @@ module POSIX
             stdin.close
             []
           end
+        slice_method = input.respond_to?(:byteslice) ? :byteslice : :slice
         t = timeout
+
         while readers.any? || writers.any?
           ready = IO.select(readers, writers, readers + writers, t)
           raise TimeoutExceeded if ready.nil?
@@ -177,11 +216,11 @@ module POSIX
             begin
               boom = nil
               size = fd.write_nonblock(input)
-              input = input[size, input.size]
+              input = input.send(slice_method, size..-1)
             rescue Errno::EPIPE => boom
             rescue Errno::EAGAIN, Errno::EINTR
             end
-            if boom || input.size == 0
+            if boom || input.bytesize == 0
               stdin.close
               writers.delete(stdin)
             end
@@ -189,7 +228,7 @@ module POSIX
 
           # read from stdout and stderr streams
           ready[0].each do |fd|
-            buf = (fd == stdout) ? out : err
+            buf = (fd == stdout) ? @out : @err
             begin
               buf << fd.readpartial(BUFSIZE)
             rescue Errno::EAGAIN, Errno::EINTR
@@ -207,12 +246,12 @@ module POSIX
           end
 
           # maybe we've hit our max output
-          if max && ready[0].any? && (out.size + err.size) > max
+          if max && ready[0].any? && (@out.size + @err.size) > max
             raise MaximumOutputExceeded
           end
         end
 
-        [out, err]
+        [@out, @err]
       end
 
       # Wait for the child process to exit

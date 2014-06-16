@@ -156,9 +156,34 @@ after spawning:
     >> child.out
     "42\n"
 
-Additional options can be used to specify the maximum output size and time of
-execution before the child process is aborted. See the `POSIX::Spawn::Child`
-docs for more info.
+Additional options can be used to specify the maximum output size (`:max`) and
+time of execution (`:timeout`) before the child process is aborted. See the
+`POSIX::Spawn::Child` docs for more info.
+
+#### Reading Partial Results
+
+`POSIX::Spawn::Child.new` spawns the process immediately when instantiated.
+As a result, if it is interrupted by an exception (either from reaching the
+maximum output size, the time limit, or another factor), it is not possible to
+access the `out` or `err` results because the constructor did not complete.
+
+If you want to get the `out` and `err` data was available when the process
+was interrupted, use the `POSIX::Spawn::Child.build` alternate form to
+create the child without immediately spawning the process.  Call `exec!`
+to run the command at a place where you can catch any exceptions:
+
+    >> child = POSIX::Spawn::Child.build('git', 'log', :max => 100)
+    >> begin
+    ?>   child.exec!
+    ?> rescue POSIX::Spawn::MaximumOutputExceeded
+    ?>   # limit was reached
+    ?> end
+    >> child.out
+    "commit fa54abe139fd045bf6dc1cc259c0f4c06a9285bb\n..."
+
+Please note that when the `MaximumOutputExceeded` exception is raised, the
+actual combined `out` and `err` data may be a bit longer than the `:max`
+value due to internal buffering.
 
 ## STATUS
 
