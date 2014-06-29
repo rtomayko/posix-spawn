@@ -185,7 +185,7 @@ module POSIX
         # force all string and IO encodings to BINARY under 1.9 for now
         if @out.respond_to?(:force_encoding) and stdin.respond_to?(:set_encoding)
           [stdin, stdout, stderr].each do |fd|
-            fd.set_encoding('BINARY', 'BINARY')
+            fd.set_encoding('BINARY')
           end
           @out.force_encoding('BINARY')
           @err.force_encoding('BINARY')

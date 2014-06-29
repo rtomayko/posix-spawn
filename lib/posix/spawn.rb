@@ -1,4 +1,4 @@
-unless RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
+unless RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin|java)/
   require 'posix_spawn_ext'
 end
 
@@ -139,6 +139,8 @@ module POSIX
   #     with Ruby >= 1.8.7.
   #
   module Spawn
+    require 'posix/spawn/jruby' if RUBY_PLATFORM == 'java'
+
     extend self
 
     # Spawn a child process with a variety of options using the best
@@ -156,7 +158,9 @@ module POSIX
     # Returns the integer pid of the newly spawned process.
     # Raises any number of Errno:: exceptions on failure.
     def spawn(*args)
-      if respond_to?(:_pspawn)
+      if RUBY_PLATFORM == 'java'
+        ::POSIX::Spawn::JRuby::spawn(*args)
+      elsif respond_to?(:_pspawn)
         pspawn(*args)
       elsif ::Process.respond_to?(:spawn)
         ::Process::spawn(*args)
