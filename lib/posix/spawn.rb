@@ -484,6 +484,18 @@ module POSIX
       end
     end
     
+    # Derives the shell command to use when running the spawn.
+    #
+    # On a Windows machine, this will yield:
+    #   [['cmd.exe', 'cmd.exe'], '/c']
+    # Note: 'cmd.exe' is used if the COMSPEC environment variable
+    #   is not specified. If you would like to use something other
+    #   than 'cmd.exe', specify its path in ENV['COMSPEC']
+    #
+    # On all other systems, this will yield:
+    #   [['/bin/sh', '/bin/sh'], '-c']
+    #
+    # Returns a platform-specific [[<shell>, <shell>], <command-switch>] array.
     def default_command_prefixes
       if RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
         sh = ENV['COMSPEC'] || 'cmd.exe'
