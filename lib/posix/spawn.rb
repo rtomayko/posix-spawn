@@ -268,6 +268,7 @@ module POSIX
     #
     # Returns the String output of the command.
     def `(cmd)
+      r, w = IO.pipe
       pid = spawn(*system_command_prefixes, cmd, :out => w, r => :close)
 
       if pid > 0
