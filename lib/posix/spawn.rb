@@ -268,7 +268,7 @@ module POSIX
     #
     # Returns the String output of the command.
     def `(cmd)
-      pid = spawn(default_command_prefixes, cmd, :out => w, r => :close)
+      pid = spawn(system_command_prefixes, cmd, :out => w, r => :close)
 
       if pid > 0
         w.close
@@ -483,7 +483,7 @@ module POSIX
         object.respond_to?(:to_io) ? object.to_io : nil
       end
     end
-    
+
     # Derives the shell command to use when running the spawn.
     #
     # On a Windows machine, this will yield:
@@ -496,7 +496,7 @@ module POSIX
     #   [['/bin/sh', '/bin/sh'], '-c']
     #
     # Returns a platform-specific [[<shell>, <shell>], <command-switch>] array.
-    def default_command_prefixes
+    def system_command_prefixes
       if RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
         sh = ENV['COMSPEC'] || 'cmd.exe'
         [[sh, sh], '/c']
@@ -520,7 +520,7 @@ module POSIX
     def adjust_process_spawn_argv(args)
       if args.size == 1 && args[0] =~ /[ |>]/
         # single string with these characters means run it through the shell
-        [*default_command_prefixes, args[0]]
+        [*system_command_prefixes, args[0]]
       elsif !args[0].respond_to?(:to_ary)
         # [argv0, argv1, ...]
         [[args[0], args[0]], *args[1..-1]]
