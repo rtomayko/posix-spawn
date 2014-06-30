@@ -121,6 +121,14 @@ module SpawnImplementationTests
     # this happens on darwin only. GNU does spawn and exits 127.
   end
 
+  def test_spawn_invalid_chdir_raises_exception
+    pid = _spawn("echo", "hiya", :chdir => "/this/does/not/exist")
+    # fspawn does chdir in child, so it exits with 127
+    assert_process_exit_status pid, 127
+  rescue Errno::ENOENT
+    # pspawn and native spawn do chdir in parent, so they throw an exception
+  end
+
   def test_spawn_closing_multiple_fds_with_array_keys
     rd, wr = IO.pipe
     pid = _spawn("exec 2>/dev/null 101>&#{wr.posix_fileno} || exit 1", [rd, wr, :out] => :close)

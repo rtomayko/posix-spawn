@@ -319,7 +319,7 @@ each_env_i(VALUE key, VALUE val, VALUE arg)
 static VALUE
 rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
-	int i, ret;
+	int i, ret = 0;
 	char **envp = NULL;
 	VALUE dirname;
 	VALUE cmdname;
@@ -411,18 +411,25 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	if (RTEST(dirname = rb_hash_delete(options, ID2SYM(rb_intern("chdir"))))) {
 		char *new_cwd = StringValuePtr(dirname);
 		cwd = getcwd(NULL, 0);
-		chdir(new_cwd);
+		if (chdir(new_cwd) == -1) {
+			free(cwd);
+			cwd = NULL;
+			ret = errno;
+		}
 	}
 
-	if (RHASH_SIZE(options) == 0) {
-		ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
-		if (cwd) {
-			chdir(cwd);
-			free(cwd);
+	if (ret == 0) {
+		if (RHASH_SIZE(options) == 0) {
+			ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
+			if (cwd)
+				chdir(cwd);
+		} else {
+			ret = -1;
 		}
-	} else {
-		ret = -1;
 	}
+
+	if (cwd)
+		free(cwd);
 
 	posix_spawn_file_actions_destroy(&fops);
 	posix_spawnattr_destroy(&attr);
