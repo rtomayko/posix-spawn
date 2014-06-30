@@ -110,6 +110,13 @@ posixspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_
 
 	fd  = posixspawn_obj_to_fd(key);
 	if (fd >= 0) {
+		/* raise an exception if 'fd' is invalid */
+		if (fcntl(fd, F_GETFD) == -1) {
+			char error_context[32];
+			snprintf(error_context, sizeof(error_context), "when closing fd %d", fd);
+			rb_sys_fail(error_context);
+			return ST_DELETE;
+		}
 		posix_spawn_file_actions_addclose(fops, fd);
 		return ST_DELETE;
 	} else {
@@ -138,6 +145,8 @@ posixspawn_file_actions_adddup2(VALUE key, VALUE val, posix_spawn_file_actions_t
 	if (fd < 0)
 		return ST_CONTINUE;
 
+	fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) & ~FD_CLOEXEC);
+	fcntl(newfd, F_SETFD, fcntl(newfd, F_GETFD) & ~FD_CLOEXEC);
 	posix_spawn_file_actions_adddup2(fops, fd, newfd);
 	return ST_DELETE;
 }
@@ -319,7 +328,7 @@ each_env_i(VALUE key, VALUE val, VALUE arg)
 static VALUE
 rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 {
-	int i, ret;
+	int i, ret = 0;
 	char **envp = NULL;
 	VALUE dirname;
 	VALUE cmdname;
@@ -396,6 +405,11 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	sigemptyset(&mask);
 	posix_spawnattr_setsigmask(&attr, &mask);
 
+	/* Child reverts SIGPIPE handler to the default. */
+	flags |= POSIX_SPAWN_SETSIGDEF;
+	sigaddset(&mask, SIGPIPE);
+	posix_spawnattr_setsigdefault(&attr, &mask);
+
 #if defined(POSIX_SPAWN_USEVFORK) || defined(__GLIBC__)
 	/* Force USEVFORK on GNU libc. If this is undefined, it's probably
 	 * because you forgot to define _GNU_SOURCE at the top of this file.
@@ -411,18 +425,28 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	if (RTEST(dirname = rb_hash_delete(options, ID2SYM(rb_intern("chdir"))))) {
 		char *new_cwd = StringValuePtr(dirname);
 		cwd = getcwd(NULL, 0);
-		chdir(new_cwd);
+		if (chdir(new_cwd) == -1) {
+			free(cwd);
+			cwd = NULL;
+			ret = errno;
+		}
 	}
 
-	if (RHASH_SIZE(options) == 0) {
-		ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
-		if (cwd) {
-			chdir(cwd);
-			free(cwd);
+	if (ret == 0) {
+		if (RHASH_SIZE(options) == 0) {
+			ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
+			if (cwd) {
+				/* Ignore chdir failures here.  There's already a child running, so
+				 * raising an exception here would do more harm than good. */
+				if (chdir(cwd) == -1) {}
+			}
+		} else {
+			ret = -1;
 		}
-	} else {
-		ret = -1;
 	}
+
+	if (cwd)
+		free(cwd);
 
 	posix_spawn_file_actions_destroy(&fops);
 	posix_spawnattr_destroy(&attr);

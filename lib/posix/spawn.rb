@@ -210,6 +210,8 @@ module POSIX
               if fd?(val)
                 val = fd_to_io(val)
                 key.reopen(val)
+                key.close_on_exec = false
+                val.close_on_exec = false
               elsif val == :close
                 if key.respond_to?(:close_on_exec=)
                   key.close_on_exec = true
@@ -236,7 +238,7 @@ module POSIX
           Process::setpgid(0, pgroup) if pgroup
 
           # do the deed
-          ::Kernel::exec(*argv)
+          ::Kernel::exec(*argv, :close_others=>false)
         ensure
           exit!(127)
         end

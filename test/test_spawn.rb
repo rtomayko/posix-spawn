@@ -68,33 +68,33 @@ module SpawnImplementationTests
 
   def test_sanity_of_checking_clone_with_sh
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd => rd)
+    pid = _spawn("exec 2>/dev/null 9<&#{rd.posix_fileno} || exit 1", rd => rd)
     assert_process_exit_status pid, 0
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
   end
 
   def test_spawn_close_option_with_symbolic_standard_stream_names
-    pid = _spawn('exec 2>/dev/null 100<&0 || exit 1', :in => :close)
+    pid = _spawn('true 2>/dev/null 9<&0 || exit 1', :in => :close)
     assert_process_exit_status pid, 1
 
-    pid = _spawn('exec 2>/dev/null 101>&1 102>&2 || exit 1',
+    pid = _spawn('true 2>/dev/null 9>&1 8>&2 || exit 1',
                  :out => :close, :err => :close)
     assert_process_exit_status pid, 1
   end
 
   def test_spawn_close_on_standard_stream_io_object
-    pid = _spawn('exec 2>/dev/null 100<&0 || exit 1', STDIN => :close)
+    pid = _spawn('true 2>/dev/null 9<&0 || exit 1', STDIN => :close)
     assert_process_exit_status pid, 1
 
-    pid = _spawn('exec 2>/dev/null 101>&1 102>&2 || exit 1',
+    pid = _spawn('true 2>/dev/null 9>&1 8>&2 || exit 1',
                  STDOUT => :close, STDOUT => :close)
     assert_process_exit_status pid, 1
   end
 
   def test_spawn_close_option_with_fd_number
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd.posix_fileno => :close)
+    pid = _spawn("true 2>/dev/null 9<&#{rd.posix_fileno} || exit 1", rd.posix_fileno => :close)
     assert_process_exit_status pid, 1
 
     assert !rd.closed?
@@ -105,7 +105,7 @@ module SpawnImplementationTests
 
   def test_spawn_close_option_with_io_object
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 100<&#{rd.posix_fileno} || exit 1", rd => :close)
+    pid = _spawn("true 2>/dev/null 9<&#{rd.posix_fileno} || exit 1", rd => :close)
     assert_process_exit_status pid, 1
 
     assert !rd.closed?
@@ -121,9 +121,17 @@ module SpawnImplementationTests
     # this happens on darwin only. GNU does spawn and exits 127.
   end
 
+  def test_spawn_invalid_chdir_raises_exception
+    pid = _spawn("echo", "hiya", :chdir => "/this/does/not/exist")
+    # fspawn does chdir in child, so it exits with 127
+    assert_process_exit_status pid, 127
+  rescue Errno::ENOENT
+    # pspawn and native spawn do chdir in parent, so they throw an exception
+  end
+
   def test_spawn_closing_multiple_fds_with_array_keys
     rd, wr = IO.pipe
-    pid = _spawn("exec 2>/dev/null 101>&#{wr.posix_fileno} || exit 1", [rd, wr, :out] => :close)
+    pid = _spawn("true 2>/dev/null 9>&#{wr.posix_fileno} || exit 1", [rd, wr, :out] => :close)
     assert_process_exit_status pid, 1
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
@@ -181,7 +189,7 @@ module SpawnImplementationTests
   # have to pass it explicitly as fd => fd.
   def test_explicitly_passing_an_fd_as_open
     rd, wr = IO.pipe
-    pid = _spawn("exec 101>&#{wr.posix_fileno} || exit 1", wr => wr)
+    pid = _spawn("exec 9>&#{wr.posix_fileno} || exit 1", wr => wr)
     assert_process_exit_ok pid
   ensure
     [rd, wr].each { |fd| fd.close rescue nil }
