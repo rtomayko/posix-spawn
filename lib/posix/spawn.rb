@@ -269,12 +269,7 @@ module POSIX
     # Returns the String output of the command.
     def `(cmd)
       r, w = IO.pipe
-      if RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
-        sh = ENV['COMSPEC'] || 'cmd.exe'
-        pid = spawn([sh, sh], '/c', cmd, :out => w, r => :close)
-      else
-        pid = spawn(['/bin/sh', '/bin/sh'], '-c', cmd, :out => w, r => :close)
-      end
+      pid = spawn(*system_command_prefixes, cmd, :out => w, r => :close)
 
       if pid > 0
         w.close
@@ -490,6 +485,27 @@ module POSIX
       end
     end
 
+    # Derives the shell command to use when running the spawn.
+    #
+    # On a Windows machine, this will yield:
+    #   [['cmd.exe', 'cmd.exe'], '/c']
+    # Note: 'cmd.exe' is used if the COMSPEC environment variable
+    #   is not specified. If you would like to use something other
+    #   than 'cmd.exe', specify its path in ENV['COMSPEC']
+    #
+    # On all other systems, this will yield:
+    #   [['/bin/sh', '/bin/sh'], '-c']
+    #
+    # Returns a platform-specific [[<shell>, <shell>], <command-switch>] array.
+    def system_command_prefixes
+      if RUBY_PLATFORM =~ /(mswin|mingw|cygwin|bccwin)/
+        sh = ENV['COMSPEC'] || 'cmd.exe'
+        [[sh, sh], '/c']
+      else
+        [['/bin/sh', '/bin/sh'], '-c']
+      end
+    end
+
     # Converts the various supported command argument variations into a
     # standard argv suitable for use with exec. This includes detecting commands
     # to be run through the shell (single argument strings with spaces).
@@ -505,7 +521,7 @@ module POSIX
     def adjust_process_spawn_argv(args)
       if args.size == 1 && args[0] =~ /[ |>]/
         # single string with these characters means run it through the shell
-        [['/bin/sh', '/bin/sh'], '-c', args[0]]
+        [*system_command_prefixes, args[0]]
       elsif !args[0].respond_to?(:to_ary)
         # [argv0, argv1, ...]
         [[args[0], args[0]], *args[1..-1]]
