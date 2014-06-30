@@ -110,6 +110,13 @@ posixspawn_file_actions_addclose(VALUE key, VALUE val, posix_spawn_file_actions_
 
 	fd  = posixspawn_obj_to_fd(key);
 	if (fd >= 0) {
+		/* raise an exception if 'fd' is invalid */
+		if (fcntl(fd, F_GETFD) == -1) {
+			char error_context[32];
+			snprintf(error_context, sizeof(error_context), "when closing fd %d", fd);
+			rb_sys_fail(error_context);
+			return ST_DELETE;
+		}
 		posix_spawn_file_actions_addclose(fops, fd);
 		return ST_DELETE;
 	} else {
