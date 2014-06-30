@@ -433,8 +433,11 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 	if (ret == 0) {
 		if (RHASH_SIZE(options) == 0) {
 			ret = posix_spawnp(&pid, file, &fops, &attr, cargv, envp ? envp : environ);
-			if (cwd)
-				chdir(cwd);
+			if (cwd) {
+				/* Ignore chdir failures here.  There's already a child running, so
+				 * raising an exception here would do more harm than good. */
+				if (chdir(cwd) == -1) {}
+			}
 		} else {
 			ret = -1;
 		}
