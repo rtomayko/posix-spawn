@@ -205,7 +205,7 @@ These `Process::spawn` arguments are currently supported to any of
         :unsetenv_others => true   : clear environment variables except specified by env
         :unsetenv_others => false  : don't clear (default)
       current directory:
-        :chdir => str
+        :chdir => str : Not thread-safe when using posix_spawn (see below)
       process group:
         :pgroup => true or 0 : make a new process group
         :pgroup => pgid      : join to specified process group
@@ -242,6 +242,13 @@ These options are currently NOT supported:
       file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
         :close_others => false : inherit fds (default for system and exec)
         :close_others => true  : don't inherit (default for spawn and IO.popen)
+
+The `:chdir` option provided by Posix::Spawn::Child, Posix::Spawn#spawn,
+Posix::Spawn#system and Posix::Spawn#popen4 is not thread-safe because
+processes spawned with the posix_spawn(2) system call inherit the working
+directory of the calling process. The posix-spawn gem works around this
+limitation in the system call by changing the working directory of the calling
+process immediately before and after spawning the child process.
 
 ## ACKNOWLEDGEMENTS
 
