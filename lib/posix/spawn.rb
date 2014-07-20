@@ -79,7 +79,9 @@ module POSIX
   # When a hash is given in the last argument (options), it specifies a
   # current directory and zero or more fd redirects for the child process.
   #
-  # The :chdir option specifies the current directory:
+  # The :chdir option specifies the current directory. Note that :chdir is not
+  # thread-safe on systems that provide posix_spawn(2), because it forces a
+  # temporary change of the working directory of the calling process.
   #
   #     spawn(command, :chdir => "/var/tmp")
   #
