@@ -1,7 +1,6 @@
-require 'test/unit'
-require 'posix-spawn'
+require 'test_helper'
 
-class BacktickTest < Test::Unit::TestCase
+class BacktickTest < Minitest::Test
   include POSIX::Spawn
 
   def test_backtick_simple
