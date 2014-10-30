@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
 
   s.authors = ['Ryan Tomayko', 'Aman Gupta']
   s.email = ['r@tomayko.com', 'aman@tmm1.net']
-  s.license = 'MIT'
+  s.licenses = ['MIT', 'LGPL']
 
   s.add_development_dependency 'rake-compiler', '0.7.6'
   s.add_development_dependency 'minitest', '>= 4'
