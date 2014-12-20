@@ -251,6 +251,7 @@ posixspawn_set_pgroup(VALUE options, posix_spawnattr_t *pattr, short *pflags)
 			posix_spawnattr_setpgroup(pattr, FIX2INT(pgroup_val));
 			break;
 		case T_NIL:
+		case T_UNDEF:
 			break;
 		default:
 			rb_raise(rb_eTypeError, ":pgroup option is invalid");
