@@ -113,7 +113,7 @@ module POSIX
           else
             {}
           end
-        new(*args, { :noexec => true }.merge(options))
+        new(*(args + [{ :noexec => true }.merge(options)]))
       end
 
       # All data written to the child process's stdout stream as a String.
