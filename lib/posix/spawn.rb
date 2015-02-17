@@ -245,7 +245,8 @@ module POSIX
           if RUBY_VERSION =~ /\A1\.8/
             ::Kernel::exec(*argv)
           else
-            ::Kernel::exec(*(argv << {:close_others=>false}))
+            argv_and_options = argv + [{:close_others=>false}]
+            ::Kernel::exec(*argv_and_options)
           end
         ensure
           exit!(127)
@@ -277,7 +278,8 @@ module POSIX
     # Returns the String output of the command.
     def `(cmd)
       r, w = IO.pipe
-      pid = spawn(*(system_command_prefixes << cmd << {:out => w, r => :close}))
+      command_and_args = system_command_prefixes + [cmd, {:out => w, r => :close}]
+      pid = spawn(*command_and_args)
 
       if pid > 0
         w.close
@@ -529,7 +531,8 @@ module POSIX
     def adjust_process_spawn_argv(args)
       if args.size == 1 && args[0] =~ /[ |>]/
         # single string with these characters means run it through the shell
-        [*(system_command_prefixes << args[0])]
+        command_and_args = system_command_prefixes + [args[0]]
+        [*command_and_args]
       elsif !args[0].respond_to?(:to_ary)
         # [argv0, argv1, ...]
         [[args[0], args[0]], *args[1..-1]]
