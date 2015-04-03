@@ -14,7 +14,13 @@ end
 # Ruby Extension
 # ==========================================================
 
-require 'rake/extensiontask'
+begin
+  require 'rake/extensiontask'
+rescue LoadError => boom
+  warn "ERROR: The rake-compiler gem dependency is missing."
+  warn "Please run `bundle install' and try again."
+  raise
+end
 Rake::ExtensionTask.new('posix_spawn_ext', GEMSPEC) do |ext|
   ext.ext_dir = 'ext'
 end
