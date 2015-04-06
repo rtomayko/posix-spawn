@@ -79,9 +79,7 @@ module POSIX
       #                        MaximumOutputExceeded exception.
       #   :pgroup_kill => bool Boolean specifying whether to kill the process
       #                        group (true) or individual process (false, default).
-      #                        Note that `:pgroup => true` must also be
-      #                        specified when this option is set true so that
-      #                        the new process gets its a new process group.
+      #                        Setting this option true implies :pgroup => true.
       #
       # Returns a new Child instance whose underlying process has already
       # executed to completion. The out, err, and status attributes are
@@ -92,7 +90,10 @@ module POSIX
         @input = @options.delete(:input)
         @timeout = @options.delete(:timeout)
         @max = @options.delete(:max)
-        @pgroup_kill = @options.delete(:pgroup_kill)
+        if @options.delete(:pgroup_kill)
+          @pgroup_kill = true
+          @options[:pgroup] = true
+        end
         @options.delete(:chdir) if @options[:chdir].nil?
         exec! if !@options.delete(:noexec)
       end

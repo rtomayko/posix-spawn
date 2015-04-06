@@ -95,7 +95,7 @@ class ChildTest < Minitest::Test
   end
 
   def test_max_pgroup_kill
-    child = Child.build('yes', :max => 100_000, :pgroup => true, :pgroup_kill => true)
+    child = Child.build('yes', :max => 100_000, :pgroup_kill => true)
     assert_raises(MaximumOutputExceeded) { child.exec! }
     assert_process_reaped child.pid
     assert_process_group_reaped child.pid
@@ -109,7 +109,7 @@ class ChildTest < Minitest::Test
   end
 
   def test_max_with_child_hierarchy_pgroup_kill
-    child = Child.build('/bin/sh', '-c', 'true && yes', :max => 100_000, :pgroup => true, :pgroup_kill => true)
+    child = Child.build('/bin/sh', '-c', 'true && yes', :max => 100_000, :pgroup_kill => true)
     assert_raises(MaximumOutputExceeded) { child.exec! }
     assert_process_reaped child.pid
     assert_process_group_reaped child.pid
@@ -123,7 +123,7 @@ class ChildTest < Minitest::Test
   end
 
   def test_max_with_stubborn_child_pgroup_kill
-    child = Child.build("trap '' TERM; yes", :max => 100_000, :pgroup => true, :pgroup_kill => true)
+    child = Child.build("trap '' TERM; yes", :max => 100_000, :pgroup_kill => true)
     assert_raises(MaximumOutputExceeded) { child.exec! }
     assert_process_reaped child.pid
     assert_process_group_reaped child.pid
@@ -161,7 +161,7 @@ class ChildTest < Minitest::Test
 
   def test_timeout_pgroup_kill
     start = Time.now
-    child = Child.build('sleep', '1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
+    child = Child.build('sleep', '1', :timeout => 0.05, :pgroup_kill => true)
     assert_raises(TimeoutExceeded) { child.exec! }
     assert_process_reaped child.pid
     assert_process_group_reaped child.pid
@@ -175,7 +175,7 @@ class ChildTest < Minitest::Test
   end
 
   def test_timeout_with_child_hierarchy_pgroup_kill
-    child = Child.build('/bin/sh', '-c', 'true && sleep 1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
+    child = Child.build('/bin/sh', '-c', 'true && sleep 1', :timeout => 0.05, :pgroup_kill => true)
     assert_raises(TimeoutExceeded) { child.exec! }
     assert_process_reaped child.pid
     assert_process_group_reaped child.pid
@@ -183,7 +183,7 @@ class ChildTest < Minitest::Test
 
   def test_timeout_with_partial_output
     start = Time.now
-    p = Child.build('echo Hello; sleep 1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
+    p = Child.build('echo Hello; sleep 1', :timeout => 0.05, :pgroup_kill => true)
     assert_raises(TimeoutExceeded) { p.exec! }
     assert_process_reaped p.pid
     assert_process_group_reaped Process.pid
