@@ -5,6 +5,13 @@ require 'test_helper'
 class ChildTest < Minitest::Test
   include POSIX::Spawn
 
+  # verify the process was reaped.
+  def assert_reaped(pid)
+    Process.kill(0, pid)
+    fail "Process #{pid} still running"
+  rescue Errno::ESRCH
+  end
+
   def test_sanity
     assert_same POSIX::Spawn::Child, Child
   end
@@ -56,39 +63,39 @@ class ChildTest < Minitest::Test
   end
 
   def test_max
-    assert_raises MaximumOutputExceeded do
-      Child.new('yes', :max => 100_000)
-    end
+    child = Child.build('yes', :max => 100_000)
+    assert_raises(MaximumOutputExceeded) { child.exec! }
+    assert_reaped child.pid
   end
 
   def test_max_pgroup_kill
-    assert_raises MaximumOutputExceeded do
-      Child.new('yes', :max => 100_000, :pgroup => true, :pgroup_kill => true)
-    end
+    child = Child.build('yes', :max => 100_000, :pgroup => true, :pgroup_kill => true)
+    assert_raises(MaximumOutputExceeded) { child.exec! }
+    assert_reaped child.pid
   end
 
   def test_max_with_child_hierarchy
-    assert_raises MaximumOutputExceeded do
-      Child.new('/bin/sh', '-c', 'yes', :max => 100_000)
-    end
+    child = Child.build('/bin/sh', '-c', 'true && yes', :max => 100_000)
+    assert_raises(MaximumOutputExceeded) { child.exec! }
+    assert_reaped child.pid
   end
 
   def test_max_with_child_hierarchy_pgroup_kill
-    assert_raises MaximumOutputExceeded do
-      Child.new('/bin/sh', '-c', 'yes', :max => 100_000, :pgroup => true, :pgroup_kill => true)
-    end
+    child = Child.build('/bin/sh', '-c', 'true && yes', :max => 100_000, :pgroup => true, :pgroup_kill => true)
+    assert_raises(MaximumOutputExceeded) { child.exec! }
+    assert_reaped child.pid
   end
 
   def test_max_with_stubborn_child
-    assert_raises MaximumOutputExceeded do
-      Child.new("trap '' TERM; yes", :max => 100_000)
-    end
+    child = Child.build("trap '' TERM; yes", :max => 100_000)
+    assert_raises(MaximumOutputExceeded) { child.exec! }
+    assert_reaped child.pid
   end
 
   def test_max_with_stubborn_child_pgroup_kill
-    assert_raises MaximumOutputExceeded do
-      Child.new("trap '' TERM; yes", :max => 100_000, :pgroup => true, :pgroup_kill => true)
-    end
+    child = Child.build("trap '' TERM; yes", :max => 100_000, :pgroup => true, :pgroup_kill => true)
+    assert_raises(MaximumOutputExceeded) { child.exec! }
+    assert_reaped child.pid
   end
 
   def test_max_with_partial_output
@@ -110,38 +117,37 @@ class ChildTest < Minitest::Test
 
   def test_timeout
     start = Time.now
-    assert_raises TimeoutExceeded do
-      Child.new('sleep', '1', :timeout => 0.05)
-    end
+    child = Child.build('sleep', '1', :timeout => 0.05)
+    assert_raises(TimeoutExceeded) { child.exec! }
+    assert_reaped child.pid
     assert (Time.now-start) <= 0.2
   end
 
   def test_timeout_pgroup_kill
     start = Time.now
-    assert_raises TimeoutExceeded do
-      Child.new('sleep', '1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
-    end
+    child = Child.build('sleep', '1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
+    assert_raises(TimeoutExceeded) { child.exec! }
+    assert_reaped child.pid
     assert (Time.now-start) <= 0.2
   end
 
   def test_timeout_with_child_hierarchy
-    assert_raises TimeoutExceeded do
-      Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05)
-    end
+    child = Child.build('/bin/sh', '-c', 'sleep 1', :timeout => 0.05)
+    assert_raises(TimeoutExceeded) { child.exec! }
+    assert_reaped child.pid
   end
 
   def test_timeout_with_child_hierarchy_pgroup_kill
-    assert_raises TimeoutExceeded do
-      Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
-    end
+    child = Child.build('/bin/sh', '-c', 'sleep 1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
+    assert_raises(TimeoutExceeded) { child.exec! }
+    assert_reaped child.pid
   end
 
   def test_timeout_with_partial_output
     start = Time.now
     p = Child.build('echo Hello; sleep 1', :timeout => 0.05)
-    assert_raises TimeoutExceeded do
-      p.exec!
-    end
+    assert_raises(TimeoutExceeded) { p.exec! }
+    assert_reaped p.pid
     assert (Time.now-start) <= 0.2
     assert_equal "Hello\n", p.out
   end

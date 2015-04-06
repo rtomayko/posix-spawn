@@ -134,6 +134,11 @@ module POSIX
       # Total command execution time (wall-clock time)
       attr_reader :runtime
 
+      # The pid of the spawned child process. This is unlikely to be a valid
+      # current pid since Child#exec! doesn't return until the process finishes
+      # and is reaped.
+      attr_reader :pid
+
       # Determine if the process did exit with a zero exit status.
       def success?
         @status && @status.success?
@@ -145,6 +150,7 @@ module POSIX
       def exec!
         # spawn the process and hook up the pipes
         pid, stdin, stdout, stderr = popen4(@env, *(@argv + [@options]))
+        @pid = pid
 
         # async read from all streams into buffers
         read_and_write(@input, stdin, stdout, stderr, @timeout, @max)
