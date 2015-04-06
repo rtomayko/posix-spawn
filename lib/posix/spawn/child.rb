@@ -160,8 +160,11 @@ module POSIX
       rescue Object => boom
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
         if @status.nil?
-          kill_pid = @pgroup_kill ? pid * -1 : pid
-          ::Process.kill('TERM', kill_pid) rescue nil
+          if !@pgroup_kill
+            ::Process.kill('TERM', pid) rescue nil
+          else
+            ::Process.kill('-TERM', pid) rescue nil
+          end
           @status = waitpid(pid) rescue nil
         end
         raise
