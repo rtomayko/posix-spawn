@@ -77,6 +77,11 @@ module POSIX
       #   :max     => total    Maximum number of bytes of output to allow the
       #                        process to generate before aborting with a
       #                        MaximumOutputExceeded exception.
+      #   :pgroup_kill => bool Boolean specifying whether to kill the process
+      #                        group (true) or individual process (false, default).
+      #                        Note that `:pgroup => true` must also be
+      #                        specified when this option is set true so that
+      #                        the new process gets its a new process group.
       #
       # Returns a new Child instance whose underlying process has already
       # executed to completion. The out, err, and status attributes are
@@ -87,6 +92,7 @@ module POSIX
         @input = @options.delete(:input)
         @timeout = @options.delete(:timeout)
         @max = @options.delete(:max)
+        @pgroup_kill = @options.delete(:pgroup_kill)
         @options.delete(:chdir) if @options[:chdir].nil?
         exec! if !@options.delete(:noexec)
       end
@@ -148,8 +154,9 @@ module POSIX
       rescue Object => boom
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
         if @status.nil?
-          ::Process.kill('TERM', pid) rescue nil
-          @status = waitpid(pid)      rescue nil
+          kill_pid = @pgroup_kill ? pid * -1 : pid
+          ::Process.kill('TERM', kill_pid) rescue nil
+          @status = waitpid(pid) rescue nil
         end
         raise
       ensure
