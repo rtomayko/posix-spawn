@@ -61,15 +61,33 @@ class ChildTest < Minitest::Test
     end
   end
 
+  def test_max_pgroup_kill
+    assert_raises MaximumOutputExceeded do
+      Child.new('yes', :max => 100_000, :pgroup => true, :pgroup_kill => true)
+    end
+  end
+
   def test_max_with_child_hierarchy
     assert_raises MaximumOutputExceeded do
       Child.new('/bin/sh', '-c', 'yes', :max => 100_000)
     end
   end
 
+  def test_max_with_child_hierarchy_pgroup_kill
+    assert_raises MaximumOutputExceeded do
+      Child.new('/bin/sh', '-c', 'yes', :max => 100_000, :pgroup => true, :pgroup_kill => true)
+    end
+  end
+
   def test_max_with_stubborn_child
     assert_raises MaximumOutputExceeded do
       Child.new("trap '' TERM; yes", :max => 100_000)
+    end
+  end
+
+  def test_max_with_stubborn_child_pgroup_kill
+    assert_raises MaximumOutputExceeded do
+      Child.new("trap '' TERM; yes", :max => 100_000, :pgroup => true, :pgroup_kill => true)
     end
   end
 
@@ -98,9 +116,23 @@ class ChildTest < Minitest::Test
     assert (Time.now-start) <= 0.2
   end
 
+  def test_timeout_pgroup_kill
+    start = Time.now
+    assert_raises TimeoutExceeded do
+      Child.new('sleep', '1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
+    end
+    assert (Time.now-start) <= 0.2
+  end
+
   def test_timeout_with_child_hierarchy
     assert_raises TimeoutExceeded do
       Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05)
+    end
+  end
+
+  def test_timeout_with_child_hierarchy_pgroup_kill
+    assert_raises TimeoutExceeded do
+      Child.new('/bin/sh', '-c', 'sleep 1', :timeout => 0.05, :pgroup => true, :pgroup_kill => true)
     end
   end
 
