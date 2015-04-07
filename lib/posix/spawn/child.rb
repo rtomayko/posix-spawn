@@ -77,6 +77,9 @@ module POSIX
       #   :max     => total    Maximum number of bytes of output to allow the
       #                        process to generate before aborting with a
       #                        MaximumOutputExceeded exception.
+      #   :pgroup_kill => bool Boolean specifying whether to kill the process
+      #                        group (true) or individual process (false, default).
+      #                        Setting this option true implies :pgroup => true.
       #
       # Returns a new Child instance whose underlying process has already
       # executed to completion. The out, err, and status attributes are
@@ -87,6 +90,10 @@ module POSIX
         @input = @options.delete(:input)
         @timeout = @options.delete(:timeout)
         @max = @options.delete(:max)
+        if @options.delete(:pgroup_kill)
+          @pgroup_kill = true
+          @options[:pgroup] = true
+        end
         @options.delete(:chdir) if @options[:chdir].nil?
         exec! if !@options.delete(:noexec)
       end
@@ -128,6 +135,11 @@ module POSIX
       # Total command execution time (wall-clock time)
       attr_reader :runtime
 
+      # The pid of the spawned child process. This is unlikely to be a valid
+      # current pid since Child#exec! doesn't return until the process finishes
+      # and is reaped.
+      attr_reader :pid
+
       # Determine if the process did exit with a zero exit status.
       def success?
         @status && @status.success?
@@ -139,6 +151,7 @@ module POSIX
       def exec!
         # spawn the process and hook up the pipes
         pid, stdin, stdout, stderr = popen4(@env, *(@argv + [@options]))
+        @pid = pid
 
         # async read from all streams into buffers
         read_and_write(@input, stdin, stdout, stderr, @timeout, @max)
@@ -148,8 +161,12 @@ module POSIX
       rescue Object => boom
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
         if @status.nil?
-          ::Process.kill('TERM', pid) rescue nil
-          @status = waitpid(pid)      rescue nil
+          if !@pgroup_kill
+            ::Process.kill('TERM', pid) rescue nil
+          else
+            ::Process.kill('-TERM', pid) rescue nil
+          end
+          @status = waitpid(pid) rescue nil
         end
         raise
       ensure
