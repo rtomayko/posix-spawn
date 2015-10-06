@@ -269,27 +269,22 @@ each_env_check_i(VALUE key, VALUE val, VALUE arg)
 static int
 each_env_i(VALUE key, VALUE val, VALUE arg)
 {
-	char *name = StringValuePtr(key);
-	size_t len = strlen(name);
+	const char *name = StringValuePtr(key);
+	const size_t name_len = strlen(name);
 
-	/*
-	 * Delete any existing values for this variable before inserting the new value.
-	 * This implementation was copied from glibc's unsetenv().
-	 */
-	char **ep = (char **)arg;
-	while (*ep != NULL)
-		if (!strncmp (*ep, name, len) && (*ep)[len] == '=')
-		{
-			/* Found it.  Remove this pointer by moving later ones back.  */
-			char **dp = ep;
+	char **envp = (char **)arg;
+	size_t i, j;
 
-			do
-				dp[0] = dp[1];
-			while (*dp++);
-			/* Continue the loop in case NAME appears again.  */
+	for (i = 0; envp[i];) {
+		const char *ev = envp[i];
+
+		if (strlen(ev) > name_len && !memcmp(ev, name, name_len) && ev[name_len] == '=') {
+			for (j = i; envp[j]; ++j)
+				envp[j] = envp[j + 1];
+			continue;
 		}
-		else
-			++ep;
+		i++;
+	}
 
 	/*
 	 * Insert the new value if we have one. We can assume there is space
@@ -301,15 +296,15 @@ each_env_i(VALUE key, VALUE val, VALUE arg)
 		char *cval = StringValuePtr(val);
 
 		size_t cval_len = strlen(cval);
-		size_t ep_len = len + 1 + cval_len + 1; /* +2 for null terminator and '=' separator */
+		size_t ep_len = name_len + 1 + cval_len + 1; /* +2 for null terminator and '=' separator */
 
 		/* find the last entry */
 		while (*ep != NULL) ++ep;
 		*ep = malloc(ep_len);
 
-		strncpy(*ep, name, len);
-		(*ep)[len] = '=';
-		strncpy(*ep + len + 1, cval, cval_len);
+		strncpy(*ep, name, name_len);
+		(*ep)[name_len] = '=';
+		strncpy(*ep + name_len + 1, cval, cval_len);
 		(*ep)[ep_len-1] = 0;
 	}
 
@@ -373,6 +368,7 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 
 		if (RHASH_SIZE(env) > 0) {
 			int size = 0;
+			char **new_env;
 
 			char **curr = environ;
 			if (curr) {
@@ -387,7 +383,7 @@ rb_posixspawn_pspawn(VALUE self, VALUE env, VALUE argv, VALUE options)
 				size = 0;
 			}
 
-			char **new_env = calloc(size+RHASH_SIZE(env)+1, sizeof(char*));
+			new_env = calloc(size+RHASH_SIZE(env)+1, sizeof(char*));
 			for (i = 0; i < size; i++) {
 				new_env[i] = strdup(environ[i]);
 			}
