@@ -158,7 +158,7 @@ module POSIX
 
         # grab exit status
         @status = waitpid(pid)
-      rescue Object => _boom
+      rescue Object
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
         if @status.nil?
           if !@pgroup_kill
