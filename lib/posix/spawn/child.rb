@@ -158,7 +158,7 @@ module POSIX
 
         # grab exit status
         @status = waitpid(pid)
-      rescue Object => boom
+      rescue Object
         [stdin, stdout, stderr].each { |fd| fd.close rescue nil }
         if @status.nil?
           if !@pgroup_kill
@@ -197,7 +197,6 @@ module POSIX
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
         max = nil if max && max <= 0
         @out, @err = '', ''
-        offset = 0
 
         # force all string and IO encodings to BINARY under 1.9 for now
         if @out.respond_to?(:force_encoding) and stdin.respond_to?(:set_encoding)
