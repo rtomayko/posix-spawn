@@ -228,6 +228,8 @@ class ChildTest < Minitest::Test
     stdout_buf = ""
     stdout_stream = Proc.new do |chunk|
       stdout_buf << chunk
+
+      false
     end
 
     input = "hello!"
@@ -243,15 +245,42 @@ class ChildTest < Minitest::Test
     stderr_buf = ""
     stderr_stream = Proc.new do |chunk|
       stderr_buf << chunk
+
+      false
     end
 
-    input = "hello!"
-    p = Child.new('ls', '-?', :input => input, :streams => {
+    p = Child.new('ls', '-?', :streams => {
       :stderr => stderr_stream
     })
 
     refute p.success?
     refute stderr_buf.empty?
+  end
+
+  def test_streaming_stdout_aborted
+    stdout_stream = Proc.new do |chunk|
+      true
+    end
+
+    input = "hello!"
+    assert_raises POSIX::Spawn::Aborted do
+      p = Child.new('cat', :input => input, :streams => {
+        :stdout => stdout_stream
+      })
+    end
+  end
+
+  def test_streaming_stderr_aborted
+    stderr_stream = Proc.new do |chunk|
+      true
+    end
+
+    input = "hello!"
+    assert_raises POSIX::Spawn::Aborted do
+      p = Child.new('ls', '-?', :streams => {
+        :stderr => stderr_stream
+      })
+    end
   end
 
   ##

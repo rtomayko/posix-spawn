@@ -337,6 +337,10 @@ module POSIX
     class TimeoutExceeded < StandardError
     end
 
+    # Exception raised when output streaming is aborted early.
+    class Aborted < StandardError
+    end
+
     private
 
     # Turns the various varargs incantations supported by Process::spawn into a

@@ -260,20 +260,25 @@ module POSIX
               fd.close
             end
 
+            abort = false
             if chunk
               if fd == stdout
                 if @streaming && @stdout_block
-                  @stdout_block.call(chunk)
+                  abort = !!@stdout_block.call(chunk)
                 else
                   @out << chunk
                 end
               else
                 if @streaming && @stderr_block
-                  @stderr_block.call(chunk)
+                  abort = !!@stderr_block.call(chunk)
                 else
                   @err << chunk
                 end
               end
+            end
+
+            if @streaming && abort
+              raise Aborted
             end
           end
 
