@@ -95,6 +95,13 @@ module POSIX
           @options[:pgroup] = true
         end
         @options.delete(:chdir) if @options[:chdir].nil?
+        @streaming = false
+        if streams = @options.delete(:streams)
+          @stdout_block = streams[:stdout]
+          @stderr_block = streams[:stderr]
+
+          @streaming = !!@stdout_block || !!@stderr_block
+        end
         exec! if !@options.delete(:noexec)
       end
 
@@ -244,13 +251,29 @@ module POSIX
 
           # read from stdout and stderr streams
           ready[0].each do |fd|
-            buf = (fd == stdout) ? @out : @err
+            chunk = nil
             begin
-              buf << fd.readpartial(BUFSIZE)
+              chunk = fd.readpartial(BUFSIZE)
             rescue Errno::EAGAIN, Errno::EINTR
             rescue EOFError
               readers.delete(fd)
               fd.close
+            end
+
+            if chunk
+              if fd == stdout
+                if @streaming && @stdout_block
+                  @stdout_block.call(chunk)
+                else
+                  @out << chunk
+                end
+              else
+                if @streaming && @stderr_block
+                  @stderr_block.call(chunk)
+                else
+                  @err << chunk
+                end
+              end
             end
           end
 

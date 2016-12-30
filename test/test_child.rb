@@ -224,6 +224,36 @@ class ChildTest < Minitest::Test
     assert p.success?
   end
 
+  def test_streaming_stdout
+    stdout_buf = ""
+    stdout_stream = Proc.new do |chunk|
+      stdout_buf << chunk
+    end
+
+    input = "hello!"
+    p = Child.new('cat', :input => input, :streams => {
+      :stdout => stdout_stream
+    })
+
+    assert p.success?
+    assert_equal input, stdout_buf
+  end
+
+  def test_streaming_stderr
+    stderr_buf = ""
+    stderr_stream = Proc.new do |chunk|
+      stderr_buf << chunk
+    end
+
+    input = "hello!"
+    p = Child.new('ls', '-?', :input => input, :streams => {
+      :stderr => stderr_stream
+    })
+
+    refute p.success?
+    refute stderr_buf.empty?
+  end
+
   ##
   # Assertion Helpers
 
