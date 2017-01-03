@@ -95,13 +95,15 @@ module POSIX
           @options[:pgroup] = true
         end
         @options.delete(:chdir) if @options[:chdir].nil?
-        @streaming = false
-        if streams = @options.delete(:streams)
-          @stdout_block = streams[:stdout]
-          @stderr_block = streams[:stderr]
 
-          @streaming = !!@stdout_block || !!@stderr_block
+        @stdout_buffer = StringIO.new
+        @stderr_buffer = StringIO.new
+
+        if streams = @options.delete(:streams)
+          @stdout_buffer = streams[:stdout] if streams[:stdout]
+          @stderr_buffer = streams[:stderr] if streams[:stderr]
         end
+
         exec! if !@options.delete(:noexec)
       end
 
@@ -131,10 +133,14 @@ module POSIX
       end
 
       # All data written to the child process's stdout stream as a String.
-      attr_reader :out
+      def out
+        @stdout_buffer.string
+      end
 
       # All data written to the child process's stderr stream as a String.
-      attr_reader :err
+      def err
+        @stderr_buffer.string
+      end
 
       # A Process::Status object with information on how the child exited.
       attr_reader :status
@@ -203,16 +209,16 @@ module POSIX
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
         max = nil if max && max <= 0
-        @out, @err = '', ''
 
         # force all string and IO encodings to BINARY under 1.9 for now
-        if @out.respond_to?(:force_encoding) and stdin.respond_to?(:set_encoding)
+        if @stdout_buffer.respond_to?(:set_encoding)
+          bin_encoding = Encoding::BINARY
           [stdin, stdout, stderr].each do |fd|
-            fd.set_encoding('BINARY', 'BINARY')
+            fd.set_encoding(bin_encoding, bin_encoding)
           end
-          @out.force_encoding('BINARY')
-          @err.force_encoding('BINARY')
-          input = input.dup.force_encoding('BINARY') if input
+          @stdout_buffer.set_encoding(bin_encoding)
+          @stderr_buffer.set_encoding(bin_encoding)
+          input = input.dup.force_encoding(bin_encoding) if input
         end
 
         timeout = nil if timeout && timeout <= 0.0
@@ -263,21 +269,13 @@ module POSIX
             abort = false
             if chunk
               if fd == stdout
-                if @streaming && @stdout_block
-                  abort = !!@stdout_block.call(chunk)
-                else
-                  @out << chunk
-                end
+                abort = (@stdout_buffer.write(chunk) == 0)
               else
-                if @streaming && @stderr_block
-                  abort = !!@stderr_block.call(chunk)
-                else
-                  @err << chunk
-                end
+                abort = (@stderr_buffer.write(chunk) == 0)
               end
             end
 
-            if @streaming && abort
+            if abort
               raise Aborted
             end
           end
@@ -290,12 +288,10 @@ module POSIX
           end
 
           # maybe we've hit our max output
-          if max && ready[0].any? && (@out.size + @err.size) > max
+          if max && ready[0].any? && (@stdout_buffer.size + @stderr_buffer.size) > max
             raise MaximumOutputExceeded
           end
         end
-
-        [@out, @err]
       end
 
       # Wait for the child process to exit

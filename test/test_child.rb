@@ -131,7 +131,7 @@ class ChildTest < Minitest::Test
 
   def test_max_with_partial_output
     p = Child.build('yes', :max => 100_000)
-    assert_nil p.out
+    assert_empty p.out
     assert_raises MaximumOutputExceeded do
       p.exec!
     end
@@ -225,12 +225,7 @@ class ChildTest < Minitest::Test
   end
 
   def test_streaming_stdout
-    stdout_buf = ""
-    stdout_stream = Proc.new do |chunk|
-      stdout_buf << chunk
-
-      false
-    end
+    stdout_stream = StringIO.new
 
     input = "hello!"
     p = Child.new('cat', :input => input, :streams => {
@@ -238,28 +233,24 @@ class ChildTest < Minitest::Test
     })
 
     assert p.success?
-    assert_equal input, stdout_buf
+    assert_equal input, stdout_stream.string
   end
 
   def test_streaming_stderr
-    stderr_buf = ""
-    stderr_stream = Proc.new do |chunk|
-      stderr_buf << chunk
-
-      false
-    end
+    stderr_stream = StringIO.new
 
     p = Child.new('ls', '-?', :streams => {
       :stderr => stderr_stream
     })
 
     refute p.success?
-    refute stderr_buf.empty?
+    assert stderr_stream.size > 0
   end
 
   def test_streaming_stdout_aborted
-    stdout_stream = Proc.new do |chunk|
-      true
+    stdout_stream = StringIO.new
+    def stdout_stream.write(chunk)
+      0
     end
 
     input = "hello!"
@@ -271,8 +262,9 @@ class ChildTest < Minitest::Test
   end
 
   def test_streaming_stderr_aborted
-    stderr_stream = Proc.new do |chunk|
-      true
+    stderr_stream = StringIO.new
+    def stderr_stream.write(chunk)
+      0
     end
 
     input = "hello!"
