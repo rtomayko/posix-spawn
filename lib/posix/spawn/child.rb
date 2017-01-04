@@ -203,11 +203,6 @@ module POSIX
       # Maximum buffer size for reading
       BUFSIZE = (32 * 1024)
 
-      @@encoding_aware = "".respond_to?(:force_encoding)
-      def encoding_aware?
-        @@encoding_aware
-      end
-
       # Start a select loop writing any input on the child's stdin and reading
       # any output from the child's stdout or stderr.
       #
@@ -229,7 +224,7 @@ module POSIX
         @out, @err = '', ''
 
         # force all string and IO encodings to BINARY under 1.9 for now
-        if encoding_aware?
+        if @out.respond_to?(:force_encoding) and stdin.respond_to?(:set_encoding)
           [stdin, stdout, stderr].each do |fd|
             fd.set_encoding('BINARY', 'BINARY')
           end
