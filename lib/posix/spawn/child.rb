@@ -251,6 +251,7 @@ module POSIX
         streams = {stdout => @stdout_stream, stderr => @stderr_stream}
 
         bytes_seen = 0
+        chunk_buffer = ""
         while readers.any? || writers.any?
           ready = IO.select(readers, writers, readers + writers, t)
           raise TimeoutExceeded if ready.nil?
@@ -272,13 +273,12 @@ module POSIX
 
           # read from stdout and stderr streams
           ready[0].each do |fd|
-            chunk = nil
             begin
-              chunk = fd.readpartial(BUFSIZE)
+              fd.readpartial(BUFSIZE, chunk_buffer)
 
-              raise Aborted unless streams[fd].call(chunk)
+              raise Aborted unless streams[fd].call(chunk_buffer)
 
-              bytes_seen += chunk.bytesize
+              bytes_seen += chunk_buffer.bytesize
             rescue Errno::EAGAIN, Errno::EINTR
             rescue EOFError
               readers.delete(fd)
