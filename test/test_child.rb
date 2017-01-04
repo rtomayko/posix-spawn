@@ -279,6 +279,24 @@ class ChildTest < Minitest::Test
     end
   end
 
+  def test_streaming_stdout_over_default_bufsize_boundary
+    stdout_buff = ""
+    chunk_count = 0
+    stdout_stream = Proc.new do |chunk|
+      chunk_count += 1
+      stdout_buff << chunk
+    end
+
+    limit = Child::BUFSIZE * 2
+
+    begin
+      Child.new('yes', :streams => {:stdout => stdout_stream}, :max => limit)
+    rescue POSIX::Spawn::MaximumOutputExceeded
+    end
+
+    assert chunk_count > 1
+  end
+
   ##
   # Assertion Helpers
 
