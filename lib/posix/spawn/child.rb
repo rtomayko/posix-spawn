@@ -96,12 +96,24 @@ module POSIX
         end
         @options.delete(:chdir) if @options[:chdir].nil?
 
-        @stdout_buffer = StringIO.new
-        @stderr_buffer = StringIO.new
+        @out, @err = "", ""
+
+        @stdout_stream = Proc.new do |chunk|
+          @out << chunk
+        end
+
+        @stderr_stream = Proc.new do |chunk|
+          @err << chunk
+        end
 
         if streams = @options.delete(:streams)
-          @stdout_buffer = streams[:stdout] if streams[:stdout]
-          @stderr_buffer = streams[:stderr] if streams[:stderr]
+          if streams[:stdout]
+            @stdout_stream = streams[:stdout]
+          end
+
+          if streams[:stderr]
+            @stderr_stream = streams[:stderr]
+          end
         end
 
         exec! if !@options.delete(:noexec)
@@ -133,14 +145,10 @@ module POSIX
       end
 
       # All data written to the child process's stdout stream as a String.
-      def out
-        @stdout_buffer.string
-      end
+      attr_reader :out
 
       # All data written to the child process's stderr stream as a String.
-      def err
-        @stderr_buffer.string
-      end
+      attr_reader :err
 
       # A Process::Status object with information on how the child exited.
       attr_reader :status
@@ -191,6 +199,11 @@ module POSIX
       # Maximum buffer size for reading
       BUFSIZE = (32 * 1024)
 
+      @@encoding_aware = "".respond_to?(:force_encoding)
+      def encoding_aware?
+        @@encoding_aware
+      end
+
       # Start a select loop writing any input on the child's stdin and reading
       # any output from the child's stdout or stderr.
       #
@@ -209,15 +222,16 @@ module POSIX
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
         max = nil if max && max <= 0
+        @out, @err = "", ""
 
         # force all string and IO encodings to BINARY under 1.9 for now
-        if @stdout_buffer.respond_to?(:set_encoding)
+        if encoding_aware?
           bin_encoding = Encoding::BINARY
           [stdin, stdout, stderr].each do |fd|
             fd.set_encoding(bin_encoding, bin_encoding)
           end
-          @stdout_buffer.set_encoding(bin_encoding)
-          @stderr_buffer.set_encoding(bin_encoding)
+          @out.force_encoding(bin_encoding)
+          @err.force_encoding(bin_encoding)
           input = input.dup.force_encoding(bin_encoding) if input
         end
 
@@ -236,6 +250,9 @@ module POSIX
         slice_method = input.respond_to?(:byteslice) ? :byteslice : :slice
         t = timeout
 
+        streams = {stdout => @stdout_stream, stderr => @stderr_stream}
+
+        bytes_seen = 0
         while readers.any? || writers.any?
           ready = IO.select(readers, writers, readers + writers, t)
           raise TimeoutExceeded if ready.nil?
@@ -260,23 +277,14 @@ module POSIX
             chunk = nil
             begin
               chunk = fd.readpartial(BUFSIZE)
+
+              raise Aborted unless streams[fd].call(chunk)
+
+              bytes_seen += chunk.bytesize
             rescue Errno::EAGAIN, Errno::EINTR
             rescue EOFError
               readers.delete(fd)
               fd.close
-            end
-
-            abort = false
-            if chunk
-              if fd == stdout
-                abort = (@stdout_buffer.write(chunk) == 0)
-              else
-                abort = (@stderr_buffer.write(chunk) == 0)
-              end
-            end
-
-            if abort
-              raise Aborted
             end
           end
 
@@ -288,7 +296,7 @@ module POSIX
           end
 
           # maybe we've hit our max output
-          if max && ready[0].any? && (@stdout_buffer.size + @stderr_buffer.size) > max
+          if max && ready[0].any? && bytes_seen > max
             raise MaximumOutputExceeded
           end
         end

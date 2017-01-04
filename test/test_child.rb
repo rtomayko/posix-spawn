@@ -225,7 +225,10 @@ class ChildTest < Minitest::Test
   end
 
   def test_streaming_stdout
-    stdout_stream = StringIO.new
+    stdout_buff = ""
+    stdout_stream = Proc.new do |chunk|
+      stdout_buff << chunk
+    end
 
     input = "hello!"
     p = Child.new('cat', :input => input, :streams => {
@@ -233,24 +236,26 @@ class ChildTest < Minitest::Test
     })
 
     assert p.success?
-    assert_equal input, stdout_stream.string
+    assert_equal input, stdout_buff
   end
 
   def test_streaming_stderr
-    stderr_stream = StringIO.new
+    stderr_buff = ""
+    stderr_stream = Proc.new do |chunk|
+      stderr_buff << chunk
+    end
 
     p = Child.new('ls', '-?', :streams => {
       :stderr => stderr_stream
     })
 
     refute p.success?
-    assert stderr_stream.size > 0
+    assert stderr_buff.size > 0
   end
 
   def test_streaming_stdout_aborted
-    stdout_stream = StringIO.new
-    def stdout_stream.write(chunk)
-      0
+    stdout_stream = Proc.new do |chunk|
+      false
     end
 
     input = "hello!"
@@ -262,9 +267,8 @@ class ChildTest < Minitest::Test
   end
 
   def test_streaming_stderr_aborted
-    stderr_stream = StringIO.new
-    def stderr_stream.write(chunk)
-      0
+    stderr_stream = Proc.new do |chunk|
+      false
     end
 
     input = "hello!"
