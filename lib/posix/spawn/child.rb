@@ -226,17 +226,16 @@ module POSIX
       #   exceeds the amount specified by the max argument.
       def read_and_write(input, stdin, stdout, stderr, timeout=nil, max=nil)
         max = nil if max && max <= 0
-        @out, @err = "", ""
+        @out, @err = '', ''
 
         # force all string and IO encodings to BINARY under 1.9 for now
         if encoding_aware?
-          bin_encoding = Encoding::BINARY
           [stdin, stdout, stderr].each do |fd|
-            fd.set_encoding(bin_encoding, bin_encoding)
+            fd.set_encoding('BINARY', 'BINARY')
           end
-          @out.force_encoding(bin_encoding)
-          @err.force_encoding(bin_encoding)
-          input = input.dup.force_encoding(bin_encoding) if input
+          @out.force_encoding('BINARY')
+          @err.force_encoding('BINARY')
+          input = input.dup.force_encoding('BINARY') if input
         end
 
         timeout = nil if timeout && timeout <= 0.0
