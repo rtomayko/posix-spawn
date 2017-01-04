@@ -100,10 +100,14 @@ module POSIX
 
         @stdout_stream = Proc.new do |chunk|
           @out << chunk
+
+          true
         end
 
         @stderr_stream = Proc.new do |chunk|
           @err << chunk
+
+          true
         end
 
         if streams = @options.delete(:streams)
