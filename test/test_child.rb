@@ -289,9 +289,8 @@ class ChildTest < Minitest::Test
 
     limit = Child::BUFSIZE * 2
 
-    begin
+    assert_raises POSIX::Spawn::MaximumOutputExceeded do
       Child.new('yes', :streams => {:stdout => stdout_stream}, :max => limit)
-    rescue POSIX::Spawn::MaximumOutputExceeded
     end
 
     assert chunk_count > 1
