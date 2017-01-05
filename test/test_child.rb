@@ -293,6 +293,7 @@ class ChildTest < Minitest::Test
       Child.new('yes', :streams => {:stdout => stdout_stream}, :max => limit)
     end
 
+    assert_equal limit, stdout_buff.bytesize
     assert chunk_count > 1
   end
 
