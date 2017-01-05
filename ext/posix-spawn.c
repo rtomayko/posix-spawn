@@ -45,7 +45,7 @@ static VALUE rb_mPOSIXSpawn;
  *       an actual fd number:
  *         - The symbols :in, :out, or :err for fds 0, 1, or 2.
  *         - An IO object. (IO#fileno is returned)
- *         - A Fixnum.
+ *         - An Integer.
  *
  * Returns the fd number >= 0 if one could be established, or -1 if the object
  * does not map to an fd.
@@ -56,8 +56,12 @@ posixspawn_obj_to_fd(VALUE obj)
 	int fd = -1;
 	switch (TYPE(obj)) {
 		case T_FIXNUM:
-			/* Fixnum fd number */
-			fd = FIX2INT(obj);
+		case T_BIGNUM:
+			/* Integer fd number
+			 * rb_fix2int takes care of raising if the provided object is a
+			 * Bignum and is out of range of an int
+			 */
+			fd = (int)rb_fix2int(obj);
 			break;
 
 		case T_SYMBOL:
@@ -94,7 +98,7 @@ posixspawn_obj_to_fd(VALUE obj)
 /*
  * Hash iterator that sets up the posix_spawn_file_actions_t with addclose
  * operations. Only hash pairs whose value is :close are processed. Keys may
- * be the :in, :out, :err, an IO object, or a Fixnum fd number.
+ * be the :in, :out, :err, an IO object, or an Integer fd number.
  *
  * Returns ST_DELETE when an addclose operation was added; ST_CONTINUE when
  * no operation was performed.

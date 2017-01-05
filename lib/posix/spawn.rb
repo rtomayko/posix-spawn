@@ -85,7 +85,7 @@ module POSIX
   #
   #     spawn(command, :chdir => "/var/tmp")
   #
-  # The :in, :out, :err, a Fixnum, an IO object or an Array option specify
+  # The :in, :out, :err, an Integer, an IO object or an Array option specify
   # fd redirection. For example, stderr can be merged into stdout as follows:
   #
   #     spawn(command, :err => :out)
@@ -460,11 +460,11 @@ module POSIX
 
     # Determine whether object is fd-like.
     #
-    # Returns true if object is an instance of IO, Fixnum >= 0, or one of the
+    # Returns true if object is an instance of IO, Integer >= 0, or one of the
     # the symbolic names :in, :out, or :err.
     def fd?(object)
       case object
-      when Fixnum
+      when Integer
         object >= 0
       when :in, :out, :err, STDIN, STDOUT, STDERR, $stdin, $stdout, $stderr, IO
         true
@@ -486,7 +486,7 @@ module POSIX
         STDOUT
       when :err, 2
         STDERR
-      when Fixnum
+      when Integer
         object >= 0 ? IO.for_fd(object) : nil
       when IO
         object
