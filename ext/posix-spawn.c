@@ -61,7 +61,7 @@ posixspawn_obj_to_fd(VALUE obj)
 			 * rb_fix2int takes care of raising if the provided object is a
 			 * Bignum and is out of range of an int
 			 */
-			fd = (int)rb_fix2int(obj);
+			fd = FIX2INT(obj);
 			break;
 
 		case T_SYMBOL:
