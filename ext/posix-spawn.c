@@ -283,6 +283,11 @@ each_env_i(VALUE key, VALUE val, VALUE arg)
 		const char *ev = envp[i];
 
 		if (strlen(ev) > name_len && !memcmp(ev, name, name_len) && ev[name_len] == '=') {
+			/* This operates on a duplicated environment -- release the
+			 * existing entry memory before shifting the subsequent entry
+			 * pointers down. */
+			free(envp[i]);
+
 			for (j = i; envp[j]; ++j)
 				envp[j] = envp[j + 1];
 			continue;
