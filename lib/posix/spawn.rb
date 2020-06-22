@@ -529,7 +529,7 @@ module POSIX
     #
     # Returns a [[cmdname, argv0], argv1, ...] array.
     def adjust_process_spawn_argv(args)
-      if args.size == 1 && args[0] =~ /[ |>]/
+      if args.size == 1 && args[0].is_a?(String) && args[0] =~ /[ |>]/
         # single string with these characters means run it through the shell
         command_and_args = system_command_prefixes + [args[0]]
         [*command_and_args]
