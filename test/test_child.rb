@@ -131,7 +131,7 @@ class ChildTest < Minitest::Test
 
   def test_max_with_partial_output
     p = Child.build('yes', :max => 100_000)
-    assert_nil p.out
+    assert_empty p.out
     assert_raises MaximumOutputExceeded do
       p.exec!
     end
@@ -222,6 +222,79 @@ class ChildTest < Minitest::Test
     input = "hålø" * 10_000
     p = Child.new('cat', :input => input)
     assert p.success?
+  end
+
+  def test_streaming_stdout
+    stdout_buff = ""
+    stdout_stream = Proc.new do |chunk|
+      stdout_buff << chunk
+    end
+
+    input = "hello!"
+    p = Child.new('cat', :input => input, :streams => {
+      :stdout => stdout_stream
+    })
+
+    assert p.success?
+    assert_equal input, stdout_buff
+  end
+
+  def test_streaming_stderr
+    stderr_buff = ""
+    stderr_stream = Proc.new do |chunk|
+      stderr_buff << chunk
+    end
+
+    p = Child.new('ls', '-?', :streams => {
+      :stderr => stderr_stream
+    })
+
+    refute p.success?
+    assert stderr_buff.size > 0
+  end
+
+  def test_streaming_stdout_aborted
+    stdout_stream = Proc.new do |chunk|
+      false
+    end
+
+    input = "hello!"
+    assert_raises POSIX::Spawn::Aborted do
+      p = Child.new('cat', :input => input, :streams => {
+        :stdout => stdout_stream
+      })
+    end
+  end
+
+  def test_streaming_stderr_aborted
+    stderr_stream = Proc.new do |chunk|
+      false
+    end
+
+    input = "hello!"
+    assert_raises POSIX::Spawn::Aborted do
+      p = Child.new('ls', '-?', :streams => {
+        :stderr => stderr_stream
+      })
+    end
+  end
+
+  def test_streaming_stdout_over_default_bufsize_boundary
+    stdout_buff = ""
+    chunk_count = 0
+    stdout_stream = Proc.new do |chunk|
+      chunk_count += 1
+      stdout_buff << chunk
+    end
+
+    limit = Child::BUFSIZE * 2
+
+    assert_raises POSIX::Spawn::MaximumOutputExceeded do
+      Child.new('yes', :streams => {:stdout => stdout_stream}, :max => limit)
+    end
+
+    assert_equal limit, stdout_buff.bytesize
+    assert chunk_count > 1
   end
 
   ##

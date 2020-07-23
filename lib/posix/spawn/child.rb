@@ -93,6 +93,31 @@ module POSIX
           @options[:pgroup] = true
         end
         @options.delete(:chdir) if @options[:chdir].nil?
+
+        @out, @err = "", ""
+
+        @stdout_stream = Proc.new do |chunk|
+          @out << chunk
+
+          true
+        end
+
+        @stderr_stream = Proc.new do |chunk|
+          @err << chunk
+
+          true
+        end
+
+        if streams = @options.delete(:streams)
+          if streams[:stdout]
+            @stdout_stream = streams[:stdout]
+          end
+
+          if streams[:stderr]
+            @stderr_stream = streams[:stderr]
+          end
+        end
+
         exec! if !@options.delete(:noexec)
       end
 
@@ -221,6 +246,10 @@ module POSIX
         slice_method = input.respond_to?(:byteslice) ? :byteslice : :slice
         t = timeout
 
+        streams = {stdout => @stdout_stream, stderr => @stderr_stream}
+
+        bytes_seen = 0
+        chunk_buffer = ""
         while readers.any? || writers.any?
           ready = IO.select(readers, writers, readers + writers, t)
           raise TimeoutExceeded if ready.nil?
@@ -242,9 +271,12 @@ module POSIX
 
           # read from stdout and stderr streams
           ready[0].each do |fd|
-            buf = (fd == stdout) ? @out : @err
             begin
-              buf << fd.readpartial(BUFSIZE)
+              fd.readpartial(BUFSIZE, chunk_buffer)
+
+              raise Aborted unless streams[fd].call(chunk_buffer)
+
+              bytes_seen += chunk_buffer.bytesize
             rescue Errno::EAGAIN, Errno::EINTR
             rescue EOFError
               readers.delete(fd)
@@ -260,12 +292,10 @@ module POSIX
           end
 
           # maybe we've hit our max output
-          if max && ready[0].any? && (@out.size + @err.size) > max
+          if max && ready[0].any? && bytes_seen > max
             raise MaximumOutputExceeded
           end
         end
-
-        [@out, @err]
       end
 
       # Wait for the child process to exit
